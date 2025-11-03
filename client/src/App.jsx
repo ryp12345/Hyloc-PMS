@@ -16,6 +16,7 @@ import CalendarPage from './pages/common/calendar/CalendarPage'
 import AnalyticsPage from './pages/manager/analytics/AnalyticsPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import StaffPage from './pages/hr/staff/StaffPage'
+import ManagerStaffPage from './pages/manager/staff/StaffPage'
 import DepartmentsPage from './pages/hr/departments/DepartmentsPage'
 import DesignationsPage from './pages/hr/designations/DesignationsPage'
 import AssociationsPage from './pages/hr/associations/AssociationsPage'
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="calendar" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><CalendarPage /></ProtectedRoute>} />
           <Route path="analytics" element={<ProtectedRoute roles={['Manager','Management']}><AnalyticsPage /></ProtectedRoute>} />
           <Route path="staff" element={<ProtectedRoute roles={['HR','Management']}><StaffPage /></ProtectedRoute>} />
+          <Route path="manager/staff" element={<ProtectedRoute roles={['Manager','Management']}><ManagerStaffPage /></ProtectedRoute>} />
           <Route path="departments" element={<ProtectedRoute roles={['HR','Management']}><DepartmentsPage /></ProtectedRoute>} />
           <Route path="designations" element={<ProtectedRoute roles={['HR','Management']}><DesignationsPage /></ProtectedRoute>} />
           <Route path="associations" element={<ProtectedRoute roles={['HR','Management']}><AssociationsPage /></ProtectedRoute>} />
