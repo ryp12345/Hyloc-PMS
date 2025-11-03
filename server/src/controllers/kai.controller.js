@@ -1,0 +1,41 @@
+const { KAI, KPI } = require('../models');
+
+exports.list = async (req, res) => {
+  // Employees see their own created items; Managers/Management see all
+  const where = ['Manager','Management'].includes(req.user.role) ? {} : { created_by: req.user.id };
+  const rows = await KAI.findAll({ where });
+  res.json(rows);
+};
+
+exports.get = async (req, res) => {
+  const row = await KAI.findByPk(req.params.id);
+  if (!row) return res.status(404).json({ message: 'Not found' });
+  if (!['Manager','Management'].includes(req.user.role) && row.created_by !== req.user.id) return res.status(403).json({ message: 'Forbidden' });
+  res.json(row);
+};
+
+exports.create = async (req, res) => {
+  // Department Heads create; employees may propose if needed (keeping simple: Managers/Management)
+  if (!['Manager','Management'].includes(req.user.role)) return res.status(403).json({ message: 'Only Managers/Management can create KAI' });
+  const { kpi_id } = req.body;
+  const kpi = await KPI.findByPk(kpi_id);
+  if (!kpi) return res.status(400).json({ message: 'Invalid KPI' });
+  const row = await KAI.create({ ...req.body, created_by: req.user.id });
+  res.status(201).json(row);
+};
+
+exports.update = async (req, res) => {
+  const row = await KAI.findByPk(req.params.id);
+  if (!row) return res.status(404).json({ message: 'Not found' });
+  if (!['Manager','Management'].includes(req.user.role) && row.created_by !== req.user.id) return res.status(403).json({ message: 'Forbidden' });
+  await row.update(req.body);
+  res.json(row);
+};
+
+exports.remove = async (req, res) => {
+  const row = await KAI.findByPk(req.params.id);
+  if (!row) return res.status(404).json({ message: 'Not found' });
+  if (!['Manager','Management'].includes(req.user.role)) return res.status(403).json({ message: 'Forbidden' });
+  await row.destroy();
+  res.json({ message: 'Deleted' });
+};
