@@ -1,7 +1,17 @@
 const { Task, User } = require('../models');
+const { Op } = require('sequelize');
 
 exports.myTasks = async (req, res) => {
-  const rows = await Task.findAll({ where: { assigned_to: req.user.id }, order: [['created_at', 'DESC']] });
+  // Fetch both tasks assigned TO the user and tasks created BY the user
+  const rows = await Task.findAll({ 
+    where: { 
+      [Op.or]: [
+        { assigned_to: req.user.id },
+        { assigned_by: req.user.id }
+      ]
+    }, 
+    order: [['created_at', 'DESC']] 
+  });
   res.json(rows);
 };
 

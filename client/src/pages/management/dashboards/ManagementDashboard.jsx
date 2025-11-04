@@ -34,7 +34,7 @@ export default function ManagementDashboard() {
                     <p className="text-xs text-gray-600">Manage milestones</p>
                   </div>
                 </a>
-                <a href="/staff" className="flex items-center p-3 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-indigo-300">
+                <a href="/manager/staff" className="flex items-center p-3 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-indigo-300">
                   <div className="p-2 mr-3 bg-blue-500 rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -54,6 +54,17 @@ export default function ManagementDashboard() {
                   <div>
                     <p className="font-semibold text-gray-900">Analytics</p>
                     <p className="text-xs text-gray-600">View insights</p>
+                  </div>
+                </a>
+                <a href="/tasks" className="flex items-center p-3 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-indigo-300">
+                  <div className="p-2 mr-3 bg-orange-500 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Tasks</p>
+                    <p className="text-xs text-gray-600">Manage tasks</p>
                   </div>
                 </a>
               </div>

@@ -49,7 +49,7 @@ export default function App() {
           <Route path="leave-approval" element={<ProtectedRoute roles={['Manager','Management','HR']}><LeaveApprovalPage /></ProtectedRoute>} />
           <Route path="calendar" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><CalendarPage /></ProtectedRoute>} />
           <Route path="analytics" element={<ProtectedRoute roles={['Manager','Management']}><AnalyticsPage /></ProtectedRoute>} />
-          <Route path="staff" element={<ProtectedRoute roles={['HR','Management']}><StaffPage /></ProtectedRoute>} />
+          <Route path="staff" element={<ProtectedRoute roles={['HR']}><StaffPage /></ProtectedRoute>} />
           <Route path="manager/staff" element={<ProtectedRoute roles={['Manager','Management']}><ManagerStaffPage /></ProtectedRoute>} />
           <Route path="departments" element={<ProtectedRoute roles={['HR','Management']}><DepartmentsPage /></ProtectedRoute>} />
           <Route path="designations" element={<ProtectedRoute roles={['HR','Management']}><DesignationsPage /></ProtectedRoute>} />

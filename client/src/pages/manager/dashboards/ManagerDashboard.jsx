@@ -34,14 +34,14 @@ export default function ManagerDashboard() {
                     <p className="text-sm text-gray-600">Create and track KPIs</p>
                   </div>
                 </a>
-                <a href="/staff" className="flex items-center p-4 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-indigo-300">
+                <a href="/manager/staff" className="flex items-center p-4 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-indigo-300">
                   <div className="p-2 mr-4 bg-blue-500 rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Manage Staff</p>
+                    <p className="font-semibold text-gray-900">View Staff</p>
                     <p className="text-sm text-gray-600">View team members</p>
                   </div>
                 </a>
