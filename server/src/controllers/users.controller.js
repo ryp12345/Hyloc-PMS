@@ -78,13 +78,15 @@ exports.remove = async (req, res) => {
 exports.getStaffNames = async (req, res) => {
   const users = await User.findAll({ 
     include: [Role, Staff], 
-    attributes: ['id', 'name'] 
+    attributes: ['id', 'name', 'email'] 
   });
   // Exclude the currently logged-in user from the list
   const filteredUsers = users.filter(u => u.id !== req.user.id);
   res.json(filteredUsers.map(u => ({ 
     id: u.id, 
     name: u.name, 
+    email: u.email,
+    role: u.Role?.name || null,
     designation: u.Staff?.designation || null 
   })));
 };
