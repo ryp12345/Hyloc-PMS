@@ -20,7 +20,7 @@ import { fetchMyLeaves, applyLeave, approveLeave } from '../store/slices/leavesS
 import { fetchAllUsers, fetchStaffNames } from '../store/slices/usersSlice'
 ```
 
-### API Services
+### API Services (13 modules available)
 ```javascript
 import { authService } from '../api/authApi'
 import { tasksService } from '../api/tasksApi'
@@ -31,18 +31,26 @@ import { kpiService } from '../api/kpiApi'
 import { kmiService } from '../api/kmiApi'
 import { kaiService } from '../api/kaiApi'
 import { calendarService } from '../api/calendarApi'
+import { departmentService } from '../api/departmentApi'
+import { designationService } from '../api/designationApi'
+import { associationService } from '../api/associationApi'
 ```
 
 ## Common Patterns
 
-### 1. Fetch Data (Redux)
+### 1. Fetch Data (Redux) - Wait for Auth
 ```javascript
+import { useAuth } from '../auth/AuthContext'
+
 const dispatch = useDispatch()
+const { user } = useAuth()  // ← Get auth state
 const { data, loading, error } = useSelector(state => state.feature)
 
 useEffect(() => {
-  dispatch(fetchData())
-}, [dispatch])
+  if (user) {  // ← Wait for user before fetching
+    dispatch(fetchData())
+  }
+}, [dispatch, user])
 ```
 
 ### 2. Create/Update Data (Redux)
@@ -264,9 +272,31 @@ try {
 }
 ```
 
+## URL Configuration
+
+### Development URLs
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001/api
+- **Health Check**: http://localhost:3001/api/health
+- **Database**: localhost:5432 (hyloc_db)
+
+### Environment Variables
+**Client** (`.env`):
+```env
+VITE_API_URL=http://localhost:3001/api
+```
+
+**Server** (`.env`):
+```env
+PORT=3001
+CORS_ORIGIN=http://localhost:3000
+```
+
 ## Tips
 
 💡 Always use `.unwrap()` when dispatching async actions if you want to catch errors
+
+💡 Wait for auth before fetching data - use `useAuth()` hook
 
 💡 Use `useEffect` cleanup to cancel pending requests
 
@@ -280,9 +310,13 @@ try {
 
 💡 Put business logic in Redux slices or components
 
+💡 Check localStorage for 'auth' key when debugging auth issues
+
 💡 Use TypeScript for better type safety (future enhancement)
 
 ---
 
 📚 **Full docs**: See `REDUX_IMPLEMENTATION.md`
 📝 **Examples**: Check `pages/ExampleUsagePage.jsx`
+🏗️ **Architecture**: See `ARCHITECTURE.md`
+🔧 **Ports**: See `PORT_CONFIGURATION.md`

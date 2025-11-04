@@ -1,34 +1,38 @@
 # Redux Implementation & Separate API Services
 
 ## Overview
-This project now uses **Redux Toolkit** for state management and **separate API service modules** for better organization and maintainability.
+This project uses **Redux Toolkit** for state management and **separate API service modules** for better organization and maintainability. Redux is integrated alongside the legacy API system for backward compatibility.
 
 ## Project Structure
 
 ### API Services (`client/src/api/`)
-Each feature has its own dedicated API service:
+Each feature has its own dedicated API service (13 modules total):
 
 - **axiosConfig.js** - Base axios configuration with interceptors
-- **authApi.js** - Authentication endpoints
-- **tasksApi.js** - Task management endpoints
-- **leavesApi.js** - Leave management endpoints
+- **authApi.js** - Authentication endpoints (login, logout, refresh, me)
+- **tasksApi.js** - Task management endpoints (CRUD + quick capture)
+- **leavesApi.js** - Leave management endpoints (CRUD + approval)
 - **ticketsApi.js** - Ticket management endpoints
 - **kpiApi.js** - KPI management endpoints
 - **kmiApi.js** - KMI management endpoints
 - **kaiApi.js** - KAI management endpoints
-- **usersApi.js** - User management endpoints
+- **usersApi.js** - User management endpoints (CRUD + staff names)
 - **calendarApi.js** - Calendar events endpoints
+- **departmentApi.js** - Department management endpoints
+- **designationApi.js** - Designation management endpoints
+- **associationApi.js** - Association management endpoints
 
 ### Redux Store (`client/src/store/`)
 
-#### Slices:
-- **authSlice.js** - Authentication state
-- **tasksSlice.js** - Tasks state
-- **leavesSlice.js** - Leaves state
-- **usersSlice.js** - Users state
+#### Slices (4 slices implemented):
+- **authSlice.js** - Authentication state (login, logout, refresh, me)
+- **tasksSlice.js** - Tasks state (CRUD + quick capture)
+- **leavesSlice.js** - Leaves state (CRUD + approval)
+- **usersSlice.js** - Users state (CRUD + staff names)
 
 #### Store Configuration:
-- **store.js** - Redux store configuration
+- **store.js** - Redux store configuration with Redux Toolkit
+- **hooks.js** - Custom Redux hooks (useAppDispatch, useAppSelector)
 
 ## Usage Examples
 
@@ -202,34 +206,84 @@ const tasks = response.data
 - `updateUser(id, userData)` - PUT /users/:id
 - `deleteUser(id)` - DELETE /users/:id
 
+## Implementation Status
+
+### ✅ Completed
+- Redux Toolkit integration with store configuration
+- 4 Redux slices (auth, tasks, leaves, users)
+- 13 separate API service modules
+- Auth persistence on page refresh
+- Automatic token refresh on expiration
+- TasksPage migrated to Redux
+- LeavesPage migrated to Redux
+- Custom Redux hooks
+
+### 🔄 Legacy (Still using old API)
+- TicketsPage
+- KPIPage, KMIPage, KAIPage
+- CalendarPage
+- AnalyticsPage
+- DepartmentsPage, DesignationsPage, AssociationsPage
+- StaffPage
+- Dashboard pages
+
 ## Notes
 
-- The old `api.js` file is still available for backward compatibility
+- The old `lib/api.js` file is still available for backward compatibility
 - All API calls automatically include authentication tokens
 - Token refresh is handled automatically by axios interceptors
 - Redux DevTools extension is automatically configured
 - All async operations return promises that can be handled with `.unwrap()`
+- Auth state persists in localStorage for page refresh support
+- Both Redux and legacy API systems read from the same localStorage
 
 ## Next Steps
 
-To migrate other pages to use Redux:
+To migrate remaining pages to Redux:
 
 1. Create slices for remaining features (tickets, KPI, KMI, KAI, calendar)
 2. Update components to use `useDispatch` and `useSelector`
 3. Replace direct API calls with Redux actions
 4. Test thoroughly to ensure all functionality works
+5. Remove legacy API once all pages are migrated
 
 ## Debugging
 
+### Redux DevTools
 Use Redux DevTools browser extension to:
 - Inspect current state
 - Track action history
 - Time-travel debug
 - Export/import state
+- Monitor performance
+
+### Troubleshooting
+**Issue: State not persisting on refresh**
+- Check localStorage for 'auth' key
+- Verify AuthContext initialization logic
+- Check browser console for errors
+
+**Issue: 401 Unauthorized errors**
+- Ensure user is logged in
+- Check if token is being sent in Authorization header
+- Verify token is not expired
+
+**Issue: Actions not dispatching**
+- Check if using `dispatch()` correctly
+- Use `.unwrap()` to catch errors from async thunks
+- Check Redux DevTools for action logs
 
 ## Environment Variables
 
-Make sure `.env` file has:
+Make sure `.env` files have correct URLs:
+
+**Client** (`client/.env`):
+```env
+VITE_API_URL=http://localhost:3001/api
 ```
-VITE_API_URL=http://localhost:4000/api
+
+**Server** (`server/.env`):
+```env
+PORT=3001
+CORS_ORIGIN=http://localhost:3000
 ```

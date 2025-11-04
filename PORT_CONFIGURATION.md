@@ -16,16 +16,46 @@
 ### Client Files:
 1. ✅ `client/vite.config.js` - Changed from 5173 to 3000
 2. ✅ `client/.env` - VITE_API_URL=http://localhost:3001/api
-3. ✅ `client/src/api/axiosConfig.js` - Default URL updated
-4. ✅ `client/src/lib/api.js` - Default URL updated
+3. ✅ `client/src/api/axiosConfig.js` - Default URL updated (new API services)
+4. ✅ `client/src/lib/api.js` - Default URL updated (legacy API)
 5. ✅ `client/src/auth/AuthContext.jsx` - Default URL updated
 
 ### Server Files:
 1. ✅ `server/.env` - PORT=3001, CORS_ORIGIN=http://localhost:3000
-2. ✅ `server/src/server.js` - Default port and CORS updated
+2. ✅ `server/src/server.js` - Default port 3001 and CORS updated
 
 ### Root Files:
-1. ✅ `package.json` - Added convenience scripts
+1. ✅ `package.json` - Added convenience scripts (dev, client, server)
+
+## Architecture Overview
+
+```
+┌────────────────────────────────────────┐
+│  Browser (http://localhost:3000)       │
+│  - React Application                   │
+│  - Redux Store                         │
+│  - Vite Dev Server                     │
+└────────────┬───────────────────────────┘
+             │
+             │ Axios HTTP Requests
+             │ Authorization: Bearer <token>
+             │
+┌────────────▼───────────────────────────┐
+│  Backend (http://localhost:3001)       │
+│  - Express Server                      │
+│  - REST API Endpoints                  │
+│  - JWT Authentication                  │
+│  - CORS: localhost:3000                │
+└────────────┬───────────────────────────┘
+             │
+             │ SQL Queries
+             │
+┌────────────▼───────────────────────────┐
+│  PostgreSQL (localhost:5432)           │
+│  - Database: hyloc_db                  │
+│  - Sequelize ORM                       │
+└────────────────────────────────────────┘
+```
 
 ## How to Start
 
@@ -200,9 +230,60 @@ npm start         # Start normally
 | Backend API | 3001 | http://localhost:3001/api |
 | Health Check | 3001 | http://localhost:3001/api/health |
 
+## Running the Application
+
+### Method 1: Run Both Together (Recommended)
+```bash
+# From root directory
+npm run dev
+```
+This runs both client and server concurrently using the `concurrently` package.
+
+### Method 2: Run Separately
+```bash
+# Terminal 1 - Server
+cd server
+npm run dev
+
+# Terminal 2 - Client  
+cd client
+npm run dev
+```
+
+### Method 3: Individual Scripts (from root)
+```bash
+# Start only server
+npm run server
+
+# Start only client
+npm run client
+```
+
+## Features Verification
+
+After starting both servers, verify:
+
+1. **Backend Health Check**
+   - Open: http://localhost:3001/api/health
+   - Should return: `{"status":"ok","time":"..."}`
+
+2. **Frontend Load**
+   - Open: http://localhost:3000
+   - Should show login page
+
+3. **CORS Working**
+   - Login and check browser console
+   - No CORS errors should appear
+
+4. **API Communication**
+   - Open DevTools → Network tab
+   - API calls should go to `http://localhost:3001/api/*`
+   - Should have `Authorization: Bearer ...` header
+
 ---
 
-**Status**: ✅ Configured
-**Client Port**: 3000
-**Server Port**: 3001
-**CORS**: Properly configured
+**Status**: ✅ Configured and Production Ready
+**Client Port**: 3000 (Vite Dev Server)
+**Server Port**: 3001 (Express API Server)
+**Database Port**: 5432 (PostgreSQL)
+**CORS**: Properly configured for localhost:3000

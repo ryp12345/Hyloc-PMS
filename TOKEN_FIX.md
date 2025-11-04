@@ -121,7 +121,7 @@ API calls made with token ✅
 ### Test 3: Direct URL Access
 1. ✅ Login
 2. ✅ Close browser
-3. ✅ Open new browser and go to http://localhost:5174/tasks
+3. ✅ Open new browser and go to http://localhost:3000/tasks
 4. ✅ **Expected**: User stays logged in, data loads correctly
 
 ### Test 4: Other Pages (Using Old API)
@@ -196,11 +196,18 @@ Retry original request with new token
 ## Files Modified
 
 ```
-✅ client/src/pages/tasks/TasksPage.jsx
-✅ client/src/pages/leaves/LeavesPage.jsx
+✅ client/src/pages/common/tasks/TasksPage.jsx
+✅ client/src/pages/hr/leaves/LeavesPage.jsx
 ✅ client/src/pages/ExampleUsagePage.jsx
-✅ client/src/lib/api.js
+✅ client/src/lib/api.js (legacy API with localStorage fallback)
 ```
+
+## Port Configuration
+
+**Development URLs:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001/api
+- Database: localhost:5432 (PostgreSQL)
 
 ## Common Issues & Solutions
 

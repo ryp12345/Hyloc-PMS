@@ -55,7 +55,7 @@ Clear auth & Show Login Page
 ## Testing Instructions
 
 ### Test 1: Normal Login & Refresh
-1. ✅ Open the app (http://localhost:5174)
+1. ✅ Open the app (http://localhost:3000)
 2. ✅ Login with credentials
 3. ✅ Navigate to any protected page (Tasks, Leaves, etc.)
 4. ✅ **Refresh the page (F5 or Ctrl+R)**
@@ -86,12 +86,12 @@ Clear auth & Show Login Page
 ### Test 5: Direct URL Access (When Logged In)
 1. ✅ Login successfully
 2. ✅ Close the browser tab
-3. ✅ Open a new tab and go directly to http://localhost:5174/tasks
+3. ✅ Open a new tab and go directly to http://localhost:3000/tasks
 4. ✅ **Expected**: User should remain logged in and see the tasks page
 
 ### Test 6: Protected Route Access (When Logged Out)
 1. ✅ Make sure you're logged out
-2. ✅ Try to access http://localhost:5174/tasks directly
+2. ✅ Try to access http://localhost:3000/tasks directly
 3. ✅ **Expected**: Should redirect to login page
 
 ## Visual Indicators
@@ -195,18 +195,28 @@ Look for these logs:
 
 ## Environment Variables
 
-Make sure you have:
+Make sure you have correct port configuration:
+
+**Client** (`client/.env`):
 ```env
-VITE_API_URL=http://localhost:4000/api
+VITE_API_URL=http://localhost:3001/api
+```
+
+**Server** (`server/.env`):
+```env
+PORT=3001
+CORS_ORIGIN=http://localhost:3000
 ```
 
 ## Backend Requirements
 
-The backend must support these endpoints:
+The backend must support these endpoints (all implemented at port 3001):
 - `POST /api/auth/login` - Login
 - `POST /api/auth/logout` - Logout
 - `GET /api/auth/me` - Get current user (with auth token)
 - `POST /api/auth/refresh` - Refresh access token
+
+Backend URL: http://localhost:3001/api
 
 ---
 
