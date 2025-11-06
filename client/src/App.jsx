@@ -13,13 +13,17 @@ import TicketsPage from './pages/common/tickets/TicketsPage'
 import LeavesPage from './pages/hr/leaves/LeavesPage'
 import LeaveApprovalPage from './pages/manager/leaves/LeaveApprovalPage'
 import CalendarPage from './pages/common/calendar/CalendarPage'
-import AnalyticsPage from './pages/manager/analytics/AnalyticsPage'
+import AnalyticsPage from './pages/management/analytics/AnalyticsPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import StaffPage from './pages/hr/staff/StaffPage'
 import ManagerStaffPage from './pages/manager/staff/StaffPage'
 import DepartmentsPage from './pages/hr/departments/DepartmentsPage'
 import DesignationsPage from './pages/hr/designations/DesignationsPage'
 import AssociationsPage from './pages/hr/associations/AssociationsPage'
+import GoalListPage from './pages/management/goals/GoalListPage'
+import GoalFormPage from './pages/management/goals/GoalFormPage'
+import MilestoneListPage from './pages/management/goals/MilestoneListPage'
+import MilestoneFormPage from './pages/management/goals/MilestoneFormPage'
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth()
@@ -54,6 +58,12 @@ export default function App() {
           <Route path="departments" element={<ProtectedRoute roles={['HR','Management']}><DepartmentsPage /></ProtectedRoute>} />
           <Route path="designations" element={<ProtectedRoute roles={['HR','Management']}><DesignationsPage /></ProtectedRoute>} />
           <Route path="associations" element={<ProtectedRoute roles={['HR','Management']}><AssociationsPage /></ProtectedRoute>} />
+          <Route path="management/goals" element={<ProtectedRoute roles={['Management']}><GoalListPage /></ProtectedRoute>} />
+          <Route path="management/goals/new" element={<ProtectedRoute roles={['Management']}><GoalFormPage /></ProtectedRoute>} />
+          <Route path="management/goals/edit/:id" element={<ProtectedRoute roles={['Management']}><GoalFormPage /></ProtectedRoute>} />
+          <Route path="management/goals/milestones" element={<ProtectedRoute roles={['Management']}><MilestoneListPage /></ProtectedRoute>} />
+          <Route path="management/goals/milestones/new" element={<ProtectedRoute roles={['Management']}><MilestoneFormPage /></ProtectedRoute>} />
+          <Route path="management/goals/milestones/edit/:id" element={<ProtectedRoute roles={['Management']}><MilestoneFormPage /></ProtectedRoute>} />
         </Route>
       </Routes>
     </AuthProvider>

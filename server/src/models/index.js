@@ -12,6 +12,7 @@ const Task = require('./task.model')(sequelize, DataTypes);
 const Ticket = require('./ticket.model')(sequelize, DataTypes);
 const Leave = require('./leave.model')(sequelize, DataTypes);
 const Goal = require('./goal.model')(sequelize, DataTypes);
+const Milestone = require('./milestone.model')(sequelize, DataTypes);
 const Department = require('./department.model')(sequelize, DataTypes);
 const Designation = require('./designation.model')(sequelize, DataTypes);
 const Association = require('./association.model')(sequelize, DataTypes);
@@ -52,6 +53,14 @@ Ticket.belongsTo(User, { as: 'Owner', foreignKey: 'assigned_to' });
 Goal.belongsTo(User, { as: 'Owner', foreignKey: 'owner_user_id' });
 User.hasMany(Goal, { as: 'OwnedGoals', foreignKey: 'owner_user_id' });
 
+// Goal-Department association
+Goal.belongsTo(Department, { as: 'Department', foreignKey: 'department_id' });
+Department.hasMany(Goal, { as: 'Goals', foreignKey: 'department_id' });
+
+// Goal-Milestone association
+Goal.hasMany(Milestone, { as: 'milestones', foreignKey: 'goal_id', onDelete: 'CASCADE' });
+Milestone.belongsTo(Goal, { as: 'Goal', foreignKey: 'goal_id' });
+
 module.exports = {
   sequelize,
   Role,
@@ -64,6 +73,7 @@ module.exports = {
   Ticket,
   Leave,
   Goal,
+  Milestone,
   Department,
   Designation,
   Association,

@@ -138,9 +138,9 @@ Demo-Hyloc/
 │   │   │   ├── auth/        # LoginPage
 │   │   │   ├── common/      # Tasks, Tickets, Calendar
 │   │   │   ├── employee/    # Employee Dashboard, KAI
-│   │   │   ├── manager/     # Manager Dashboard, KPI, Analytics, Leave Approval
+│   │   │   ├── manager/     # Manager Dashboard, KPI, Leave Approval, Staff
 │   │   │   ├── hr/          # HR Dashboard, Staff, Leaves, Departments, Designations, Associations
-│   │   │   └── management/  # Management Dashboard, KMI
+│   │   │   └── management/  # Management Dashboard, KMI, Analytics
 │   │   ├── store/           # Redux store (slices for auth, tasks, leaves, users)
 │   │   ├── widgets/         # KpiCards (dashboard metrics)
 │   │   ├── App.jsx          # Router (protected routes, role redirects)

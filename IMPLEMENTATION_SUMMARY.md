@@ -176,10 +176,10 @@ client/src/
 │   │   │   └── ManagerDashboard.jsx
 │   │   ├── kpi/
 │   │   │   └── KPIPage.jsx      # Legacy API
-│   │   ├── analytics/
-│   │   │   └── AnalyticsPage.jsx
-│   │   └── leaves/
-│   │       └── LeaveApprovalPage.jsx
+│   │   ├── leaves/
+│   │   │   └── LeaveApprovalPage.jsx
+│   │   └── staff/
+│   │       └── StaffPage.jsx
 │   ├── hr/
 │   │   ├── dashboards/
 │   │   │   └── HRDashboard.jsx
@@ -196,8 +196,10 @@ client/src/
 │   ├── management/
 │   │   ├── dashboards/
 │   │   │   └── ManagementDashboard.jsx
-│   │   └── kmi/
-│   │       └── KMIPage.jsx      # Legacy API
+│   │   ├── kmi/
+│   │   │   └── KMIPage.jsx      # Legacy API
+│   │   └── analytics/
+│   │       └── AnalyticsPage.jsx
 │   └── ExampleUsagePage.jsx     # NEW: Example implementation
 │
 ├── lib/

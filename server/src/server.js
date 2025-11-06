@@ -16,6 +16,8 @@ const calendarRoutes = require('./routes/calendar.routes');
 const departmentRoutes = require('./routes/department.routes');
 const designationRoutes = require('./routes/designation.routes');
 const associationRoutes = require('./routes/association.routes');
+const goalRoutes = require('./routes/goal.routes');
+const milestoneRoutes = require('./routes/milestone.routes');
 
 const app = express();
 
@@ -42,16 +44,24 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/associations', associationRoutes);
+app.use('/api/goals', goalRoutes);
+app.use('/api/milestones', milestoneRoutes);
 
 const PORT = process.env.PORT || 3001;
 
 (async () => {
   try {
+    console.log('Authenticating database connection...');
     await sequelize.authenticate();
+    console.log('Database connection established successfully.');
+    
+    console.log('Syncing database models...');
     await sequelize.sync({ alter: true }); // Dev-only; replace with migrations in prod
+    console.log('Database models synced successfully.');
+    
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`API server running on http://localhost:${PORT}`);
-      console.log(`API server also accessible on http://10.22.0.153:${PORT}`);
+      console.log(`API server also accessible on http://192.168.137.230:${PORT}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err);

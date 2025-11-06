@@ -278,12 +278,12 @@ client/src/
 │   ├── manager/             # Manager role pages
 │   │   ├── dashboards/
 │   │   │   └── ManagerDashboard.jsx
-│   │   ├── analytics/
-│   │   │   └── AnalyticsPage.jsx
 │   │   ├── kpi/
 │   │   │   └── KPIPage.jsx
-│   │   └── leaves/
-│   │       └── LeaveApprovalPage.jsx
+│   │   ├── leaves/
+│   │   │   └── LeaveApprovalPage.jsx
+│   │   └── staff/
+│   │       └── StaffPage.jsx
 │   ├── hr/                  # HR role pages
 │   │   ├── dashboards/
 │   │   │   └── HRDashboard.jsx
@@ -300,8 +300,10 @@ client/src/
 │   ├── management/          # Management role pages
 │   │   ├── dashboards/
 │   │   │   └── ManagementDashboard.jsx
-│   │   └── kmi/
-│   │       └── KMIPage.jsx
+│   │   ├── kmi/
+│   │   │   └── KMIPage.jsx
+│   │   └── analytics/
+│   │       └── AnalyticsPage.jsx
 │   └── ExampleUsagePage.jsx # ← Demo page (Redux examples)
 │
 ├── components/              # Shared Components

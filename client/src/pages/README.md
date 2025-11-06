@@ -26,14 +26,14 @@ Pages accessible by Employee role (and higher)
 
 ### 📁 manager/
 Pages accessible by Manager role (and Management)
-- **analytics/** - Analytics and reports
-  - `AnalyticsPage.jsx`
 - **dashboards/**
   - `ManagerDashboard.jsx` - Manager dashboard
 - **kpi/** - Key Performance Indicators
   - `KPIPage.jsx`
 - **leaves/** - Leave approval
   - `LeaveApprovalPage.jsx`
+- **staff/** - Staff management
+  - `StaffPage.jsx`
 
 ### 📁 hr/
 Pages accessible by HR role (and Management)
@@ -52,6 +52,8 @@ Pages accessible by HR role (and Management)
 
 ### 📁 management/
 Pages accessible by Management role only
+- **analytics/** - Analytics and reports
+  - `AnalyticsPage.jsx`
 - **dashboards/**
   - `ManagementDashboard.jsx` - Management dashboard
 - **kmi/** - Key Milestone Indicators
