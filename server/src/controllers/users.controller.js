@@ -80,9 +80,8 @@ exports.getStaffNames = async (req, res) => {
     include: [Role, Staff], 
     attributes: ['id', 'name', 'email'] 
   });
-  // Exclude the currently logged-in user from the list
-  const filteredUsers = users.filter(u => u.id !== req.user.id);
-  res.json(filteredUsers.map(u => ({ 
+  // Include all users (including the logged-in user)
+  res.json(users.map(u => ({ 
     id: u.id, 
     name: u.name, 
     email: u.email,
@@ -106,9 +105,8 @@ exports.getStaffByDepartment = async (req, res) => {
     ],
     attributes: ['id', 'name']
   });
-  // Exclude the currently logged-in user from the list
-  const filteredUsers = users.filter(u => u.id !== req.user.id);
-  res.json(filteredUsers.map(u => ({
+  // Include all users (including the logged-in user)
+  res.json(users.map(u => ({
     id: u.id,
     name: u.name,
     designation: u.Staff?.designation || null

@@ -18,5 +18,9 @@ router.post('/login', [
 router.post('/refresh', [ body('refreshToken').notEmpty() ], ctrl.refresh);
 router.get('/me', authenticate, ctrl.me);
 router.post('/logout', authenticate, ctrl.logout);
+router.post('/change-password', authenticate, [
+  body('currentPassword').notEmpty(),
+  body('newPassword').isLength({ min: 6 })
+], ctrl.changePassword);
 
 module.exports = router;

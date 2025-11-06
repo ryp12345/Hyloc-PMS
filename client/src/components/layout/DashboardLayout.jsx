@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import ChangePasswordModal from '../common/ChangePasswordModal'
 
 import logo from '../../assets/hyloc.png'
+import avtar from '../../assets/avtar.jpeg'
 
 
 const navByRole = {
@@ -51,9 +53,33 @@ export default function DashboardLayout() {
   const location = useLocation()
   const nav = navByRole[user?.role] || []
   const [openSubmenu, setOpenSubmenu] = useState(null)
+  const [profileDropdown, setProfileDropdown] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const dropdownRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileDropdown(false)
+      }
+    }
+
+    if (profileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [profileDropdown])
 
   return (
     <div className="min-h-screen h-screen grid grid-cols-[260px_1fr] bg-gray-50 overflow-hidden">
+      <ChangePasswordModal 
+        isOpen={showChangePassword} 
+        onClose={() => setShowChangePassword(false)} 
+      />
       <aside className="bg-white border-r border-gray-200 shadow-sm overflow-y-auto">
         <div className="px-6 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 flex flex-col items-center">
           <img src={logo} alt="Hyloc-GIT" className="h-16 w-auto object-contain mb-2" />
@@ -150,28 +176,50 @@ export default function DashboardLayout() {
         <div className="px-8 py-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-10">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Welcome back, {user?.name}</h2>
-              <p className="text-xs text-gray-600 mt-0.5"></p>
+              <h2 className="text-xl font-bold text-gray-900">Welcome - {user?.name}</h2>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                  {user?.name?.charAt(0) || 'U'}
-                </div>
-                <div className="ml-2 text-left">
-                  <p className="text-sm font-medium text-gray-900 leading-tight">{user?.name}</p>
-                  <p className="text-xs text-gray-500 leading-tight">{user?.role}</p>
-                </div>
-              </div>
+            <div className="relative" ref={dropdownRef}>
               <button 
-                onClick={logout} 
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white transition-all duration-300 transform bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg shadow-md hover:from-indigo-700 hover:to-purple-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => setProfileDropdown(!profileDropdown)}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
+                <img src={avtar} alt="Role Avatar" className="w-10 h-10 rounded-full object-cover" />
               </button>
+              
+              {profileDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m0 0l8-8m-8 8l8 8" />
+                    </svg>
+                    <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setProfileDropdown(false)
+                      setShowChangePassword(true)
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                    Change Password
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setProfileDropdown(false)
+                      logout()
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
