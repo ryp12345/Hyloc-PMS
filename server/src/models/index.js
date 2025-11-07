@@ -27,8 +27,10 @@ Staff.belongsTo(User);
 // Master data: Staff belongs to Department and Designation (optional)
 Department.hasMany(Staff, { foreignKey: 'department_id' });
 Designation.hasMany(Staff, { foreignKey: 'designation_id' });
+Association.hasMany(Staff, { foreignKey: 'association_id' });
 Staff.belongsTo(Department, { foreignKey: 'department_id', as: 'Department' });
 Staff.belongsTo(Designation, { foreignKey: 'designation_id', as: 'Designation' });
+Staff.belongsTo(Association, { foreignKey: 'association_id', as: 'Association' });
 
 KMI.hasMany(KPI);
 KPI.belongsTo(KMI);

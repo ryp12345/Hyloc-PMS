@@ -4,6 +4,9 @@ import { api } from '../../../lib/api'
 
 export default function AnalyticsPage() {
   const [data, setData] = useState([])
+  // Compute dynamic integer ticks for Y axis; ensure at least 1..4 are shown
+  const maxCount = data.reduce((m, d) => Math.max(m, d.count), 0)
+  const ticks = Array.from({ length: Math.max(maxCount, 4) }, (_, i) => i + 1)
 
   useEffect(() => {
     async function load() {
@@ -89,7 +92,11 @@ export default function AnalyticsPage() {
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="status" />
-                <YAxis />
+                <YAxis 
+                  allowDecimals={false}
+                  domain={[0, Math.max(maxCount, 5)]}
+                  ticks={ticks}
+                />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#fff', 

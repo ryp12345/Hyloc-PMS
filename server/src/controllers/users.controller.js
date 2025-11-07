@@ -1,16 +1,16 @@
 const bcrypt = require('bcryptjs');
-const { User, Role, Staff, Department, Designation } = require('../models');
+const { User, Role, Staff, Department, Designation, Association } = require('../models');
 
 exports.list = async (req, res) => {
   if (!['Management', 'HR'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  const users = await User.findAll({ include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }] }], attributes: { exclude: ['password'] } });
+  const users = await User.findAll({ include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }, { model: Association, as: 'Association' }] }], attributes: { exclude: ['password'] } });
   res.json(users.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.Role?.name, staff: u.Staff })));
 };
 
 exports.get = async (req, res) => {
-  const user = await User.findByPk(req.params.id, { include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }] }] });
+  const user = await User.findByPk(req.params.id, { include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }, { model: Association, as: 'Association' }] }] });
   if (!user) return res.status(404).json({ message: 'Not found' });
   if (req.user.id !== user.id && !['Management','HR'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Forbidden' });
@@ -32,9 +32,10 @@ exports.create = async (req, res) => {
     // Normalize possible camelCase keys from client
     if (payload.departmentId && !payload.department_id) payload.department_id = payload.departmentId;
     if (payload.designationId && !payload.designation_id) payload.designation_id = payload.designationId;
+    if (payload.associationId && !payload.association_id) payload.association_id = payload.associationId;
     await Staff.create(payload);
   }
-  const full = await User.findByPk(user.id, { include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }] }] });
+  const full = await User.findByPk(user.id, { include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }, { model: Association, as: 'Association' }] }] });
   res.status(201).json({ id: full.id, name: full.name, email: full.email, role: full.Role.name, staff: full.Staff });
 };
 
@@ -56,13 +57,14 @@ exports.update = async (req, res) => {
     const payload = { ...staff };
     if (payload.departmentId && !payload.department_id) payload.department_id = payload.departmentId;
     if (payload.designationId && !payload.designation_id) payload.designation_id = payload.designationId;
+    if (payload.associationId && !payload.association_id) payload.association_id = payload.associationId;
     if (user.Staff) {
       await user.Staff.update(payload);
     } else {
       await Staff.create({ ...payload, UserId: user.id, name: staff.name || user.name });
     }
   }
-  const full = await User.findByPk(user.id, { include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }] }] });
+  const full = await User.findByPk(user.id, { include: [Role, { model: Staff, include: [{ model: Department, as: 'Department' }, { model: Designation, as: 'Designation' }, { model: Association, as: 'Association' }] }] });
   res.json({ id: full.id, name: full.name, email: full.email, role: full.Role?.name, staff: full.Staff });
 };
 

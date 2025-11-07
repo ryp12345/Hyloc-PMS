@@ -53,8 +53,7 @@ export default function StaffPage() {
         r.staff?.department?.toLowerCase().includes(q) ||
         r.staff?.designation?.toLowerCase().includes(q) ||
         r.staff?.emp_id?.toLowerCase().includes(q) ||
-        r.staff?.religion?.toLowerCase().includes(q) ||
-        String(r.staff?.salary || '').toLowerCase().includes(q)
+        r.staff?.religion?.toLowerCase().includes(q)
       
       // Role filter
       const matchesRole = !filterRole || r.role === filterRole
@@ -157,12 +156,11 @@ export default function StaffPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Department</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Designation</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Religion</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Salary</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="9" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
+                  <tr><td colSpan="8" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
                 ) : (
                   paginated.map((u, idx) => (
                     <tr key={u.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
@@ -178,9 +176,6 @@ export default function StaffPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.department || u.staff?.Department?.dept_name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.designation || u.staff?.Designation?.designation_name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.religion || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {u.staff?.salary ? `$${parseFloat(u.staff.salary).toLocaleString()}` : '-'}
-                      </td>
                     </tr>
                   ))
                 )}

@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     // New relational fields for master data linkage
     department_id: { type: DataTypes.INTEGER, allowNull: true },
     designation_id: { type: DataTypes.INTEGER, allowNull: true },
+    association_id: { type: DataTypes.INTEGER, allowNull: true },
     designation: { type: DataTypes.STRING(100) },
     department: { type: DataTypes.STRING(100) },
     religion: { type: DataTypes.STRING(50) },

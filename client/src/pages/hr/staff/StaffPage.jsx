@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../../lib/api'
 import { getDepartments } from '../../../api/departmentApi'
 import { getDesignations } from '../../../api/designationApi'
+import { getAssociations } from '../../../api/associationApi'
 
 const ROLE_OPTIONS = ['Management','Manager','HR','Employee']
 
@@ -12,13 +13,23 @@ export default function StaffPage() {
   const [editingId, setEditingId] = useState(null)
   const [departments, setDepartments] = useState([])
   const [designations, setDesignations] = useState([])
+  const [associations, setAssociations] = useState([])
   const [form, setForm] = useState({
     name: '',
     email: '',
     roleName: 'Employee',
     password: '',
-    staff: { emp_id: '', designation: '', department: '', designation_id: '', department_id: '', religion: '', salary: '' }
+    staff: { emp_id: '', designation: '', department: '', designation_id: '', department_id: '', religion: '', association_id: '' /*, salary: '' */ }
   })
+  const RELIGION_OPTIONS = [
+    'Hindu',
+    'Muslim',
+    'Christian',
+    'Sikh',
+    'Buddhist',
+    'Jain',
+    'Other'
+  ];
   const [error, setError] = useState('')
 
   const load = async () => {
@@ -31,11 +42,12 @@ export default function StaffPage() {
   }
   useEffect(() => {
     load()
-    // Fetch departments and designations for dropdowns
-    Promise.allSettled([getDepartments(), getDesignations()])
-      .then(([deptRes, desigRes]) => {
+    // Fetch departments, designations and associations for dropdowns
+    Promise.allSettled([getDepartments(), getDesignations(), getAssociations()])
+      .then(([deptRes, desigRes, assoRes]) => {
         if (deptRes.status === 'fulfilled') setDepartments(deptRes.value.data || [])
         if (desigRes.status === 'fulfilled') setDesignations(desigRes.value.data || [])
+        if (assoRes.status === 'fulfilled') setAssociations(assoRes.value.data || [])
       })
       .catch(() => {})
   }, [])
@@ -43,7 +55,7 @@ export default function StaffPage() {
   const onClose = () => {
     setIsModalOpen(false)
     setEditingId(null)
-    setForm({ name: '', email: '', roleName: 'Employee', password: '', staff: { emp_id: '', designation: '', department: '', designation_id: '', department_id: '', religion: '', salary: '' } })
+    setForm({ name: '', email: '', roleName: 'Employee', password: '', staff: { emp_id: '', designation: '', department: '', designation_id: '', department_id: '', religion: '', association_id: '' /*, salary: '' */ } })
     setError('')
   }
 
@@ -63,7 +75,8 @@ export default function StaffPage() {
         designation_id: row.staff?.designation_id || row.staff?.Designation?.id || '',
         department_id: row.staff?.department_id || row.staff?.Department?.id || '',
         religion: row.staff?.religion || '',
-        salary: row.staff?.salary || ''
+        association_id: row.staff?.association_id || row.staff?.Association?.id || ''
+        /*, salary: row.staff?.salary || '' */
       }
     })
     setIsModalOpen(true)
@@ -123,7 +136,8 @@ export default function StaffPage() {
       r.staff?.department?.toLowerCase().includes(q) ||
       r.staff?.designation?.toLowerCase().includes(q) ||
       r.staff?.religion?.toLowerCase().includes(q) ||
-      String(r.staff?.salary || '').toLowerCase().includes(q)
+      r.staff?.Association?.asso_name?.toLowerCase().includes(q)
+      // || String(r.staff?.salary || '').toLowerCase().includes(q)
     ));
   }, [rows, search]);
 
@@ -175,7 +189,8 @@ export default function StaffPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Department</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Designation</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Religion</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Salary</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Association</th>
+                  {/* <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Salary</th> */}
                   <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -193,7 +208,8 @@ export default function StaffPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.department || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.designation || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.religion || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.salary || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Association?.asso_name || '-'}</td>
+                      {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.salary || '-'}</td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex items-center justify-center space-x-2">
                           <button
@@ -320,12 +336,35 @@ export default function StaffPage() {
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Religion</label>
-                          <input value={form.staff.religion} onChange={e=>setForm({ ...form, staff: { ...form.staff, religion: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="-" />
+                          <select
+                            value={form.staff.religion}
+                            onChange={e=>setForm({ ...form, staff: { ...form.staff, religion: e.target.value } })}
+                            className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">Select Religion</option>
+                            {RELIGION_OPTIONS.map(r => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
                         </div>
                         <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Association</label>
+                          <select
+                            value={form.staff.association_id}
+                            onChange={e=>setForm({ ...form, staff: { ...form.staff, association_id: e.target.value } })}
+                            className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">Select Association</option>
+                            {associations.map(a => (
+                              <option key={a.id} value={a.id}>{a.asso_name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {/* Salary field commented out as of now */}
+                        {/* <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Salary</label>
                           <input type="number" step="0.01" value={form.staff.salary} onChange={e=>setForm({ ...form, staff: { ...form.staff, salary: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Salary Amount" />
-                        </div>
+                        </div> */}
                       </div>
                     </div>
 
