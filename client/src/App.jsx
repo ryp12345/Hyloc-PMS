@@ -20,6 +20,7 @@ import ManagerStaffPage from './pages/manager/staff/StaffPage'
 import DepartmentsPage from './pages/hr/departments/DepartmentsPage'
 import DesignationsPage from './pages/hr/designations/DesignationsPage'
 import AssociationsPage from './pages/hr/associations/AssociationsPage'
+import QualificationsPage from './pages/hr/qualifications/QualificationsPage'
 import GoalListPage from './pages/management/goals/GoalListPage'
 import GoalFormPage from './pages/management/goals/GoalFormPage'
 import MilestoneListPage from './pages/management/goals/MilestoneListPage'
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="departments" element={<ProtectedRoute roles={['HR','Management']}><DepartmentsPage /></ProtectedRoute>} />
           <Route path="designations" element={<ProtectedRoute roles={['HR','Management']}><DesignationsPage /></ProtectedRoute>} />
           <Route path="associations" element={<ProtectedRoute roles={['HR','Management']}><AssociationsPage /></ProtectedRoute>} />
+          <Route path="qualifications" element={<ProtectedRoute roles={['HR','Management']}><QualificationsPage /></ProtectedRoute>} />
           <Route path="management/goals" element={<ProtectedRoute roles={['Management']}><GoalListPage /></ProtectedRoute>} />
           <Route path="management/goals/new" element={<ProtectedRoute roles={['Management']}><GoalFormPage /></ProtectedRoute>} />
           <Route path="management/goals/edit/:id" element={<ProtectedRoute roles={['Management']}><GoalFormPage /></ProtectedRoute>} />

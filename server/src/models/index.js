@@ -16,6 +16,7 @@ const Milestone = require('./milestone.model')(sequelize, DataTypes);
 const Department = require('./department.model')(sequelize, DataTypes);
 const Designation = require('./designation.model')(sequelize, DataTypes);
 const Association = require('./association.model')(sequelize, DataTypes);
+const Qualification = require('./qualification.model')(sequelize, DataTypes);
 
 // Associations per spec
 Role.hasMany(User);
@@ -79,4 +80,5 @@ module.exports = {
   Department,
   Designation,
   Association,
+  Qualification,
 };

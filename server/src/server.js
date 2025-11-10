@@ -16,6 +16,7 @@ const calendarRoutes = require('./routes/calendar.routes');
 const departmentRoutes = require('./routes/department.routes');
 const designationRoutes = require('./routes/designation.routes');
 const associationRoutes = require('./routes/association.routes');
+const qualificationRoutes = require('./routes/qualification.routes');
 const goalRoutes = require('./routes/goal.routes');
 const milestoneRoutes = require('./routes/milestone.routes');
 
@@ -44,6 +45,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/associations', associationRoutes);
+app.use('/api/qualifications', qualificationRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/milestones', milestoneRoutes);
 
