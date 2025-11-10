@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../../../lib/api'
 import { getDepartments } from '../../../api/departmentApi'
 import { getDesignations } from '../../../api/designationApi'
@@ -6,7 +7,12 @@ import { getAssociations } from '../../../api/associationApi'
 
 const ROLE_OPTIONS = ['Management','Manager','HR','Employee']
 
+const BLOOD_GROUP_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+
+const RELATION_OPTIONS = ['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Son', 'Daughter', 'Other']
+
 export default function StaffPage() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -19,7 +25,25 @@ export default function StaffPage() {
     email: '',
     roleName: 'Employee',
     password: '',
-    staff: { emp_id: '', designation: '', department: '', designation_id: '', department_id: '', religion: '', association_id: '' /*, salary: '' */ }
+    staff: { 
+      emp_id: '', 
+      designation: '', 
+      department: '', 
+      designation_id: '', 
+      department_id: '', 
+      religion: '', 
+      association_id: '',
+      date_of_birth: '',
+      phone_no: '',
+      blood_group: '',
+      emergency_contact_name: '',
+      emergency_contact_number: '',
+      emergency_contact_relation: '',
+      pan_no: '',
+      aadhar_no: '',
+      date_of_joining: ''
+      /*, salary: '' */ 
+    }
   })
   const RELIGION_OPTIONS = [
     'Hindu',
@@ -55,7 +79,31 @@ export default function StaffPage() {
   const onClose = () => {
     setIsModalOpen(false)
     setEditingId(null)
-    setForm({ name: '', email: '', roleName: 'Employee', password: '', staff: { emp_id: '', designation: '', department: '', designation_id: '', department_id: '', religion: '', association_id: '' /*, salary: '' */ } })
+    setForm({ 
+      name: '', 
+      email: '', 
+      roleName: 'Employee', 
+      password: '', 
+      staff: { 
+        emp_id: '', 
+        designation: '', 
+        department: '', 
+        designation_id: '', 
+        department_id: '', 
+        religion: '', 
+        association_id: '',
+        date_of_birth: '',
+        phone_no: '',
+        blood_group: '',
+        emergency_contact_name: '',
+        emergency_contact_number: '',
+        emergency_contact_relation: '',
+        pan_no: '',
+        aadhar_no: '',
+        date_of_joining: ''
+        /*, salary: '' */ 
+      } 
+    })
     setError('')
   }
 
@@ -75,11 +123,24 @@ export default function StaffPage() {
         designation_id: row.staff?.designation_id || row.staff?.Designation?.id || '',
         department_id: row.staff?.department_id || row.staff?.Department?.id || '',
         religion: row.staff?.religion || '',
-        association_id: row.staff?.association_id || row.staff?.Association?.id || ''
+        association_id: row.staff?.association_id || row.staff?.Association?.id || '',
+        date_of_birth: row.staff?.date_of_birth || '',
+        phone_no: row.staff?.phone_no || '',
+        blood_group: row.staff?.blood_group || '',
+        emergency_contact_name: row.staff?.emergency_contact_name || '',
+        emergency_contact_number: row.staff?.emergency_contact_number || '',
+        emergency_contact_relation: row.staff?.emergency_contact_relation || '',
+        pan_no: row.staff?.pan_no || '',
+        aadhar_no: row.staff?.aadhar_no || '',
+        date_of_joining: row.staff?.date_of_joining || ''
         /*, salary: row.staff?.salary || '' */
       }
     })
     setIsModalOpen(true)
+  }
+
+  const openView = (row) => {
+    navigate(`/staff/view/${row.id}`)
   }
 
   const submit = async (e) => {
@@ -136,6 +197,8 @@ export default function StaffPage() {
       r.staff?.department?.toLowerCase().includes(q) ||
       r.staff?.designation?.toLowerCase().includes(q) ||
       r.staff?.religion?.toLowerCase().includes(q) ||
+      r.staff?.phone_no?.toLowerCase().includes(q) ||
+      r.staff?.emp_id?.toLowerCase().includes(q) ||
       r.staff?.Association?.asso_name?.toLowerCase().includes(q)
       // || String(r.staff?.salary || '').toLowerCase().includes(q)
     ));
@@ -183,35 +246,37 @@ export default function StaffPage() {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">S.NO</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Email</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Emp ID</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Department</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Designation</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Religion</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Association</th>
-                  {/* <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Salary</th> */}
                   <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="10" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
+                  <tr><td colSpan="7" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
                 ) : (
                   paginated.map((u, idx) => (
                     <tr key={u.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm"><span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">{u.role}</span></td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.emp_id || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.department || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.designation || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.religion || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Department?.dept_name || u.staff?.department || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Designation?.designation_name || u.staff?.designation || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Association?.asso_name || '-'}</td>
-                      {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.salary || '-'}</td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex items-center justify-center space-x-2">
+                          <button
+                            onClick={() => openView(u)}
+                            className="p-2 text-white transition-colors duration-200 bg-green-600 rounded-lg hover:bg-green-700"
+                            title="View Staff Details"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
                           <button
                             onClick={() => openEdit(u)}
                             className="p-2 text-white transition-colors duration-200 bg-blue-600 rounded-lg hover:bg-blue-700"
@@ -309,6 +374,27 @@ export default function StaffPage() {
                           <input required value={form.staff.emp_id} onChange={e=>setForm({ ...form, staff: { ...form.staff, emp_id: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="EMP001" />
                         </div>
                         <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Date of Birth</label>
+                          <input type="date" value={form.staff.date_of_birth} onChange={e=>setForm({ ...form, staff: { ...form.staff, date_of_birth: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Phone Number</label>
+                          <input type="tel" value={form.staff.phone_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, phone_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="+91 1234567890" />
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Blood Group</label>
+                          <select
+                            value={form.staff.blood_group}
+                            onChange={e=>setForm({ ...form, staff: { ...form.staff, blood_group: e.target.value } })}
+                            className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">Select Blood Group</option>
+                            {BLOOD_GROUP_OPTIONS.map(bg => (
+                              <option key={bg} value={bg}>{bg}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Department</label>
                           <select
                             value={form.staff.department_id}
@@ -357,6 +443,45 @@ export default function StaffPage() {
                             <option value="">Select Association</option>
                             {associations.map(a => (
                               <option key={a.id} value={a.id}>{a.asso_name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Date of Joining</label>
+                          <input type="date" value={form.staff.date_of_joining} onChange={e=>setForm({ ...form, staff: { ...form.staff, date_of_joining: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">PAN Number</label>
+                          <input value={form.staff.pan_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, pan_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="ABCDE1234F" maxLength="10" />
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Aadhar Number</label>
+                          <input value={form.staff.aadhar_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, aadhar_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="123456789012" maxLength="12" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100">
+                      <h4 className="mb-3 text-sm font-semibold text-gray-800">Emergency Contact</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Contact Name</label>
+                          <input value={form.staff.emergency_contact_name} onChange={e=>setForm({ ...form, staff: { ...form.staff, emergency_contact_name: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Emergency Contact Name" />
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Contact Number</label>
+                          <input type="tel" value={form.staff.emergency_contact_number} onChange={e=>setForm({ ...form, staff: { ...form.staff, emergency_contact_number: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="+91 1234567890" />
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Relation</label>
+                          <select
+                            value={form.staff.emergency_contact_relation}
+                            onChange={e=>setForm({ ...form, staff: { ...form.staff, emergency_contact_relation: e.target.value } })}
+                            className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">Select Relation</option>
+                            {RELATION_OPTIONS.map(rel => (
+                              <option key={rel} value={rel}>{rel}</option>
                             ))}
                           </select>
                         </div>
