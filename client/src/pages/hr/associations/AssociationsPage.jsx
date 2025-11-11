@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getAssociations, createAssociation, updateAssociation, deleteAssociation } from '../../../api/associationApi';
 
-const initialForm = { asso_name: '', category: 'Associated', status: 'active' };
+const initialForm = { asso_name: '', status: 'active' };
 
-const CATEGORY_OPTIONS = ['Associated', 'Temporary Associated', 'Disassociated'];
 const STATUS_OPTIONS = ['active', 'inactive'];
 
 export default function AssociationsPage() {
@@ -26,7 +25,6 @@ export default function AssociationsPage() {
     setEditingId(row.id);
     setForm({
       asso_name: row.asso_name || '',
-      category: row.category || 'Associated',
       status: row.status || 'active',
     });
     setIsModalOpen(true);
@@ -64,7 +62,6 @@ export default function AssociationsPage() {
     const q = search.toLowerCase();
     return sorted.filter(r => (
       r.asso_name?.toLowerCase().includes(q) ||
-      r.category?.toLowerCase().includes(q) ||
       r.status?.toLowerCase().includes(q)
     ));
   }, [rows, search]);
@@ -102,26 +99,18 @@ export default function AssociationsPage() {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">S.NO</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Category</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">No associations found</td></tr>
+                  <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500">No associations found</td></tr>
                 ) : (
                   paginated.map((d, idx) => (
                     <tr key={d.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{d.asso_name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          d.category==='Associated'?'bg-green-100 text-green-800':
-                          d.category==='Temporary Associated'?'bg-yellow-100 text-yellow-800':
-                          'bg-red-100 text-red-800'
-                        }`}>{d.category}</span>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                           d.status==='active'?'bg-green-100 text-green-800':'bg-gray-100 text-gray-800'
@@ -199,14 +188,6 @@ export default function AssociationsPage() {
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Association Name</label>
                         <input value={form.asso_name} onChange={e=>setForm({ ...form, asso_name: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter association name" required />
-                      </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">Category</label>
-                        <select value={form.category} onChange={e=>setForm({ ...form, category: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                          {CATEGORY_OPTIONS.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
                       </div>
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Status</label>

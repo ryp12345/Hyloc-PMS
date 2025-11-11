@@ -57,9 +57,9 @@ const PORT = process.env.PORT || 3001;
     await sequelize.authenticate();
     console.log('Database connection established successfully.');
     
-    console.log('Syncing database models...');
-    await sequelize.sync({ alter: true }); // Dev-only; replace with migrations in prod
-    console.log('Database models synced successfully.');
+  console.log('Syncing database models (no alter)...');
+  await sequelize.sync(); // Avoid altering existing DB schema; use migrations to evolve schema
+  console.log('Database models synced (no alter).');
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`API server running on http://localhost:${PORT}`);

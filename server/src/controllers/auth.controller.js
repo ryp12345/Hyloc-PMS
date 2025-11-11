@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
-const { User, Role, Staff, Department, Designation } = require('../models');
+const { User, Role, Staff, Department, Designation, Association } = require('../models');
 
 function signAccessToken(user) {
   return jwt.sign({ id: user.id, role: user.Role?.name || user.roleName }, process.env.JWT_SECRET, {
@@ -69,15 +69,16 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ 
       where: { email }, 
       include: [
-        Role, 
-        { 
-          model: Staff, 
+        Role,
+        {
+          model: Staff,
           include: [
-            { model: Department, as: 'Department' }, 
-            { model: Designation, as: 'Designation' }
-          ] 
+            { model: Department, as: 'Department' },
+            { model: Designation, as: 'Designations', through: { attributes: [] } },
+            { model: Association, as: 'Associations', through: { attributes: [] } }
+          ]
         }
-      ] 
+      ]
     });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     const ok = await bcrypt.compare(password, user.password);
@@ -90,7 +91,7 @@ exports.login = async (req, res) => {
         id: user.id, 
         name: user.name, 
         email: user.email, 
-        role: user.Role.name,
+        role: user.Role ? user.Role.name : null,
         staff: user.Staff 
       }, 
       accessToken: access, 
@@ -109,15 +110,16 @@ exports.refresh = async (req, res) => {
     const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await User.findByPk(payload.id, { 
       include: [
-        Role, 
-        { 
-          model: Staff, 
+        Role,
+        {
+          model: Staff,
           include: [
-            { model: Department, as: 'Department' }, 
-            { model: Designation, as: 'Designation' }
-          ] 
+            { model: Department, as: 'Department' },
+            { model: Designation, as: 'Designations', through: { attributes: [] } },
+            { model: Association, as: 'Associations', through: { attributes: [] } }
+          ]
         }
-      ] 
+      ]
     });
     if (!user) return res.status(401).json({ message: 'Invalid refresh token' });
     const access = signAccessToken(user);
@@ -132,22 +134,23 @@ exports.me = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, { 
       include: [
-        Role, 
-        { 
-          model: Staff, 
+        Role,
+        {
+          model: Staff,
           include: [
-            { model: Department, as: 'Department' }, 
-            { model: Designation, as: 'Designation' }
-          ] 
+            { model: Department, as: 'Department' },
+            { model: Designation, as: 'Designations', through: { attributes: [] } },
+            { model: Association, as: 'Associations', through: { attributes: [] } }
+          ]
         }
-      ] 
+      ]
     });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ 
       id: user.id, 
       name: user.name, 
       email: user.email, 
-      role: user.Role.name,
+      role: user.Role ? user.Role.name : null,
       staff: user.Staff 
     });
   } catch (err) {

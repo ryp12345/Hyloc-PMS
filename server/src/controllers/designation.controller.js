@@ -3,10 +3,7 @@ const { Designation } = require('../models');
 module.exports = {
   async create(req, res) {
     try {
-      const data = { ...req.body };
-      if (data.end_date === '' || data.end_date === 'Invalid date') data.end_date = null;
-      if (data.start_date === '' || data.start_date === 'Invalid date') data.start_date = null;
-      const designation = await Designation.create(data);
+      const designation = await Designation.create(req.body);
       res.status(201).json(designation);
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -33,10 +30,7 @@ module.exports = {
     try {
       const designation = await Designation.findByPk(req.params.id);
       if (!designation) return res.status(404).json({ error: 'Not found' });
-      const data = { ...req.body };
-      if (data.end_date === '' || data.end_date === 'Invalid date') data.end_date = null;
-      if (data.start_date === '' || data.start_date === 'Invalid date') data.start_date = null;
-      await designation.update(data);
+      await designation.update(req.body);
       res.json(designation);
     } catch (err) {
       res.status(400).json({ error: err.message });

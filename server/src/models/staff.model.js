@@ -1,17 +1,14 @@
 module.exports = (sequelize, DataTypes) => {
   const Staff = sequelize.define('Staff', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    emp_id: { type: DataTypes.STRING(20), allowNull: false },
+    emp_id: { type: DataTypes.STRING(20), allowNull: false, unique: true },
     name: { type: DataTypes.STRING(100), allowNull: false },
-    // New relational fields for master data linkage
+    // Foreign keys present in DB
+    user_id: { type: DataTypes.UUID, allowNull: true },
     department_id: { type: DataTypes.INTEGER, allowNull: true },
-    designation_id: { type: DataTypes.INTEGER, allowNull: true },
-    association_id: { type: DataTypes.INTEGER, allowNull: true },
-    designation: { type: DataTypes.STRING(100) },
-    department: { type: DataTypes.STRING(100) },
+    // Domain fields per DB
     religion: { type: DataTypes.STRING(50) },
-    salary: { type: DataTypes.DECIMAL(10, 2) },
-    // Additional personal and contact information
+    // salary column not present in provided schema; omit to avoid alter
     date_of_birth: { type: DataTypes.DATEONLY, allowNull: true },
     phone_no: { type: DataTypes.TEXT, allowNull: true },
     blood_group: { type: DataTypes.STRING(10), allowNull: true },

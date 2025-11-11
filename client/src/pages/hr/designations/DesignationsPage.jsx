@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getDesignations, createDesignation, updateDesignation, deleteDesignation } from '../../../api/designationApi';
 
-const initialForm = { designation_name: '', designation_shortname: '', start_date: '', end_date: '', status: 'active' };
+const initialForm = { name: '', shortname: '', status: 'active' };
 
 export default function DesignationsPage() {
   const [rows, setRows] = useState([]);
@@ -22,10 +22,8 @@ export default function DesignationsPage() {
   const openEdit = (row) => {
     setEditingId(row.id);
     setForm({
-      designation_name: row.designation_name || '',
-      designation_shortname: row.designation_shortname || '',
-      start_date: row.start_date?.slice(0,10) || '',
-      end_date: row.end_date?.slice(0,10) || '',
+      name: row.name || '',
+      shortname: row.shortname || '',
       status: row.status || 'active',
     });
     setIsModalOpen(true);
@@ -36,8 +34,6 @@ export default function DesignationsPage() {
     try {
       const payload = { 
         ...form,
-        start_date: form.start_date || null,
-        end_date: form.end_date || null,
       };
       if (editingId) await updateDesignation(editingId, payload);
       else await createDesignation(payload);
@@ -47,7 +43,10 @@ export default function DesignationsPage() {
 
   const remove = async (id) => {
     if (!confirm('Delete this designation?')) return;
-    try { await deleteDesignation(id); load(); } catch {}
+    try { 
+      await deleteDesignation(id); 
+      load(); 
+    } catch {}
   };
 
 
@@ -66,8 +65,8 @@ export default function DesignationsPage() {
     });
     const q = search.toLowerCase();
     return sorted.filter(r => (
-      r.designation_name?.toLowerCase().includes(q) ||
-      r.designation_shortname?.toLowerCase().includes(q) ||
+      r.name?.toLowerCase().includes(q) ||
+      r.shortname?.toLowerCase().includes(q) ||
       r.status?.toLowerCase().includes(q)
     ));
   }, [rows, search]);
@@ -106,23 +105,19 @@ export default function DesignationsPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">S.NO</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Name</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Short Name</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Start Date</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">End Date</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="7" className="px-6 py-12 text-center text-gray-500">No designations found</td></tr>
+                  <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">No designations found</td></tr>
                 ) : (
                   paginated.map((d, idx) => (
                     <tr key={d.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{(page - 1) * PAGE_SIZE + idx + 1}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{d.designation_name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{d.designation_shortname}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{d.start_date?.slice(0,10) || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{d.end_date?.slice(0,10) || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{d.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{d.shortname}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm"><span className={`px-3 py-1 text-xs font-medium rounded-full ${d.status==='active'?'bg-green-100 text-green-800':'bg-gray-100 text-gray-800'}`}>{d.status}</span></td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex items-center justify-center space-x-2">
@@ -140,7 +135,7 @@ export default function DesignationsPage() {
                             className="p-2 text-white transition-colors duration-200 bg-red-600 rounded-lg hover:bg-red-700"
                             title="Delete Designation"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
@@ -195,27 +190,21 @@ export default function DesignationsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Designation Name</label>
-                        <input value={form.designation_name} onChange={e=>setForm({ ...form, designation_name: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Senior Engineer" required />
+                        <input value={form.name} onChange={e=>setForm({ ...form, name: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Senior Engineer" required />
                       </div>
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Short Name</label>
-                        <input value={form.designation_shortname} onChange={e=>setForm({ ...form, designation_shortname: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Sr Eng" required />
+                        <input value={form.shortname} onChange={e=>setForm({ ...form, shortname: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Sr Eng" required />
                       </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">Start Date</label>
-                        <input type="date" value={form.start_date} onChange={e=>setForm({ ...form, start_date: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required />
-                      </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">End Date</label>
-                        <input type="date" value={form.end_date} onChange={e=>setForm({ ...form, end_date: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                      </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">Status</label>
-                        <select value={form.status} onChange={e=>setForm({ ...form, status: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                        </select>
-                      </div>
+                      {editingId && (
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Status</label>
+                          <select value={form.status} onChange={e=>setForm({ ...form, status: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex justify-end space-x-4 pt-4">

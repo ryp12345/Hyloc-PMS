@@ -4,16 +4,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    category: {
-      type: DataTypes.ENUM('Associated', 'Temporary Associated', 'Disassociated'),
-      allowNull: false,
-      defaultValue: 'Associated',
-    },
     status: {
       type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'active',
     },
-  });
+  }, { tableName: 'associations' });
   return Association;
 };

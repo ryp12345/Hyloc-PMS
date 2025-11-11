@@ -25,13 +25,38 @@ User.belongsTo(Role);
 User.hasOne(Staff);
 Staff.belongsTo(User);
 
-// Master data: Staff belongs to Department and Designation (optional)
+// Master data relations
+// Staff belongs to Department via department_id
 Department.hasMany(Staff, { foreignKey: 'department_id' });
-Designation.hasMany(Staff, { foreignKey: 'designation_id' });
-Association.hasMany(Staff, { foreignKey: 'association_id' });
 Staff.belongsTo(Department, { foreignKey: 'department_id', as: 'Department' });
-Staff.belongsTo(Designation, { foreignKey: 'designation_id', as: 'Designation' });
-Staff.belongsTo(Association, { foreignKey: 'association_id', as: 'Association' });
+
+// Staff has many Designations via join table designation_staff
+Designation.belongsToMany(Staff, {
+  through: 'designation_staff',
+  foreignKey: 'designation_id',
+  otherKey: 'staff_id',
+  as: 'StaffMembers'
+});
+Staff.belongsToMany(Designation, {
+  through: 'designation_staff',
+  foreignKey: 'staff_id',
+  otherKey: 'designation_id',
+  as: 'Designations'
+});
+
+// Staff has many Associations via join table association_staff
+Association.belongsToMany(Staff, {
+  through: 'association_staff',
+  foreignKey: 'association_id',
+  otherKey: 'staff_id',
+  as: 'StaffMembers'
+});
+Staff.belongsToMany(Association, {
+  through: 'association_staff',
+  foreignKey: 'staff_id',
+  otherKey: 'association_id',
+  as: 'Associations'
+});
 
 KMI.hasMany(KPI);
 KPI.belongsTo(KMI);

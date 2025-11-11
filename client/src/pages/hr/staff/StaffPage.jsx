@@ -416,7 +416,7 @@ export default function StaffPage() {
                           >
                             <option value="">Select Designation</option>
                             {designations.map(d => (
-                              <option key={d.id} value={d.id}>{d.designation_name}</option>
+                              <option key={d.id} value={d.id}>{d.name}</option>
                             ))}
                           </select>
                         </div>
