@@ -24,8 +24,6 @@ import AssociationsPage from './pages/hr/associations/AssociationsPage'
 import QualificationsPage from './pages/hr/qualifications/QualificationsPage'
 import GoalListPage from './pages/management/goals/GoalListPage'
 import GoalFormPage from './pages/management/goals/GoalFormPage'
-import MilestoneListPage from './pages/management/goals/MilestoneListPage'
-import MilestoneFormPage from './pages/management/goals/MilestoneFormPage'
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth()
@@ -65,9 +63,6 @@ export default function App() {
           <Route path="management/goals" element={<ProtectedRoute roles={['Management']}><GoalListPage /></ProtectedRoute>} />
           <Route path="management/goals/new" element={<ProtectedRoute roles={['Management']}><GoalFormPage /></ProtectedRoute>} />
           <Route path="management/goals/edit/:id" element={<ProtectedRoute roles={['Management']}><GoalFormPage /></ProtectedRoute>} />
-          <Route path="management/goals/milestones" element={<ProtectedRoute roles={['Management']}><MilestoneListPage /></ProtectedRoute>} />
-          <Route path="management/goals/milestones/new" element={<ProtectedRoute roles={['Management']}><MilestoneFormPage /></ProtectedRoute>} />
-          <Route path="management/goals/milestones/edit/:id" element={<ProtectedRoute roles={['Management']}><MilestoneFormPage /></ProtectedRoute>} />
         </Route>
       </Routes>
     </AuthProvider>

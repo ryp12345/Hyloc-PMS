@@ -40,7 +40,7 @@ export default function GoalListPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this goal? All milestones will also be deleted.')) {
+    if (window.confirm('Are you sure you want to delete this goal?')) {
       try {
         await deleteGoal(id);
         loadGoals();
@@ -198,12 +198,6 @@ export default function GoalListPage() {
                     ></div>
                   </div>
                 </div>
-
-                {goal.milestones && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Milestones:</span> {goal.milestones.length}
-                  </p>
-                )}
               </div>
             ))}
           </div>
