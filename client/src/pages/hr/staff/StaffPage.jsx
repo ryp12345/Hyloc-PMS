@@ -379,7 +379,7 @@ export default function StaffPage() {
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Phone Number</label>
-                          <input type="tel" value={form.staff.phone_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, phone_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="+91 1234567890" />
+                          <input type="tel" value={form.staff.phone_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, phone_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="1234567890" />
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Blood Group</label>
@@ -470,7 +470,7 @@ export default function StaffPage() {
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Contact Number</label>
-                          <input type="tel" value={form.staff.emergency_contact_number} onChange={e=>setForm({ ...form, staff: { ...form.staff, emergency_contact_number: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="+91 1234567890" />
+                          <input type="tel" value={form.staff.emergency_contact_number} onChange={e=>setForm({ ...form, staff: { ...form.staff, emergency_contact_number: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="1234567890" />
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Relation</label>

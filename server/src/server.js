@@ -63,7 +63,7 @@ const PORT = process.env.PORT || 3001;
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`API server running on http://localhost:${PORT}`);
-      console.log(`API server also accessible on http://10.22.0.153:${PORT}`);
+      //console.log(`API server also accessible on http://10.22.0.153:${PORT}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err);

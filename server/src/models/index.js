@@ -19,11 +19,12 @@ const Association = require('./association.model')(sequelize, DataTypes);
 const Qualification = require('./qualification.model')(sequelize, DataTypes);
 
 // Associations per spec
-Role.hasMany(User);
-User.belongsTo(Role);
+// Use snake_case FKs to match DB columns
+Role.hasMany(User, { foreignKey: 'role_id' });
+User.belongsTo(Role, { foreignKey: 'role_id' });
 
-User.hasOne(Staff);
-Staff.belongsTo(User);
+User.hasOne(Staff, { foreignKey: 'user_id' });
+Staff.belongsTo(User, { foreignKey: 'user_id' });
 
 // Master data relations
 // Staff belongs to Department via department_id
