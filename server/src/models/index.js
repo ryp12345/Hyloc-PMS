@@ -18,45 +18,72 @@ const Designation = require('./designation.model')(sequelize, DataTypes);
 const Association = require('./association.model')(sequelize, DataTypes);
 const Qualification = require('./qualification.model')(sequelize, DataTypes);
 
+// Junction table models
+const DepartmentStaff = require('./department_staff.model')(sequelize, DataTypes);
+const DesignationStaff = require('./designation_staff.model')(sequelize, DataTypes);
+const AssociationStaff = require('./association_staff.model')(sequelize, DataTypes);
+
 // Associations per spec
 // Use snake_case FKs to match DB columns
 Role.hasMany(User, { foreignKey: 'role_id' });
 User.belongsTo(Role, { foreignKey: 'role_id' });
 
-User.hasOne(Staff, { foreignKey: 'user_id' });
+User.hasOne(Staff, { foreignKey: 'user_id', onDelete: 'CASCADE', hooks: true });
 Staff.belongsTo(User, { foreignKey: 'user_id' });
 
 // Master data relations
-// Staff belongs to Department via department_id
-Department.hasMany(Staff, { foreignKey: 'department_id' });
-Staff.belongsTo(Department, { foreignKey: 'department_id', as: 'Department' });
+// Staff has many Departments via join table department_staff
+Department.belongsToMany(Staff, {
+  through: DepartmentStaff,
+  foreignKey: 'department_id',
+  otherKey: 'staff_id',
+  as: 'StaffMembers',
+  onDelete: 'CASCADE',
+  hooks: true
+});
+Staff.belongsToMany(Department, {
+  through: DepartmentStaff,
+  foreignKey: 'staff_id',
+  otherKey: 'department_id',
+  as: 'Departments',
+  onDelete: 'CASCADE',
+  hooks: true
+});
 
 // Staff has many Designations via join table designation_staff
 Designation.belongsToMany(Staff, {
-  through: 'designation_staff',
+  through: DesignationStaff,
   foreignKey: 'designation_id',
   otherKey: 'staff_id',
-  as: 'StaffMembers'
+  as: 'StaffMembers',
+  onDelete: 'CASCADE',
+  hooks: true
 });
 Staff.belongsToMany(Designation, {
-  through: 'designation_staff',
+  through: DesignationStaff,
   foreignKey: 'staff_id',
   otherKey: 'designation_id',
-  as: 'Designations'
+  as: 'Designations',
+  onDelete: 'CASCADE',
+  hooks: true
 });
 
 // Staff has many Associations via join table association_staff
 Association.belongsToMany(Staff, {
-  through: 'association_staff',
+  through: AssociationStaff,
   foreignKey: 'association_id',
   otherKey: 'staff_id',
-  as: 'StaffMembers'
+  as: 'StaffMembers',
+  onDelete: 'CASCADE',
+  hooks: true
 });
 Staff.belongsToMany(Association, {
-  through: 'association_staff',
+  through: AssociationStaff,
   foreignKey: 'staff_id',
   otherKey: 'association_id',
-  as: 'Associations'
+  as: 'Associations',
+  onDelete: 'CASCADE',
+  hooks: true
 });
 
 KMI.hasMany(KPI);
@@ -107,4 +134,7 @@ module.exports = {
   Designation,
   Association,
   Qualification,
+  DepartmentStaff,
+  DesignationStaff,
+  AssociationStaff,
 };

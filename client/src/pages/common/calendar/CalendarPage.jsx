@@ -33,9 +33,11 @@ export default function CalendarPage() {
 
   useEffect(() => {
     console.log('User data:', user)
-    if (user?.staff?.department_id) {
-      console.log('Fetching staff for department:', user.staff.department_id)
-      api.get(`/users/staff-by-department?department_id=${user.staff.department_id}`)
+    // Handle new many-to-many relationship
+    const departmentId = user?.staff?.Departments?.[0]?.id || user?.staff?.Department?.id || user?.staff?.department_id;
+    if (departmentId) {
+      console.log('Fetching staff for department:', departmentId)
+      api.get(`/users/staff-by-department?department_id=${departmentId}`)
         .then(res => {
           console.log('Department staff loaded:', res.data)
           setDepartmentStaff(res.data)

@@ -178,6 +178,22 @@ export default function StaffViewPage() {
                     <p className="text-sm font-medium text-gray-900">{staff.staff?.religion || '-'}</p>
                   </div>
                   <div className="py-3 border-b border-gray-100">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Gender</label>
+                    <p className="text-sm font-medium text-gray-900">{staff.staff?.gender || '-'}</p>
+                  </div>
+                  <div className="py-3 border-b border-gray-100">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Date of Joining</label>
+                    <p className="text-sm font-medium text-gray-900">{staff.staff?.date_of_joining ? new Date(staff.staff.date_of_joining).toLocaleDateString() : '-'}</p>
+                  </div>
+                  <div className="py-3 border-b border-gray-100">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">TPM Pillar</label>
+                    <p className="text-sm font-medium text-gray-900">{staff.staff?.tpm_pillar || '-'}</p>
+                  </div>
+                  <div className="py-3 border-b border-gray-100 md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Address</label>
+                    <p className="text-sm font-medium text-gray-900">{staff.staff?.address || '-'}</p>
+                  </div>
+                  <div className="py-3 border-b border-gray-100">
                     <label className="block text-xs font-medium text-gray-500 mb-1">PAN Number</label>
                     <p className="text-sm font-medium text-gray-900">{staff.staff?.pan_no || '-'}</p>
                   </div>
@@ -185,12 +201,16 @@ export default function StaffViewPage() {
                     <label className="block text-xs font-medium text-gray-500 mb-1">Aadhar Number</label>
                     <p className="text-sm font-medium text-gray-900">{staff.staff?.aadhar_no || '-'}</p>
                   </div>
-                  <div className="py-3 border-b border-gray-100">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Date of Joining</label>
-                    <p className="text-sm font-medium text-gray-900">{staff.staff?.date_of_joining ? new Date(staff.staff.date_of_joining).toLocaleDateString() : '-'}</p>
-                  </div>
                 </div>
               </div>
+              {staff.staff?.award_recognition && (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Awards & Recognition</h4>
+                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-gray-700">{staff.staff.award_recognition}</p>
+                  </div>
+                </div>
+              )}
               <div>
                 <h4 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Emergency Contact</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -254,7 +274,7 @@ export default function StaffViewPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-6 bg-purple-50 rounded-lg border border-purple-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Designation Name</label>
-                    <p className="text-lg font-semibold text-purple-600">{staff.staff?.Designation?.designation_name || staff.staff?.designation || '-'}</p>
+                    <p className="text-lg font-semibold text-purple-600">{staff.staff?.Designation?.name || staff.staff?.designation || '-'}</p>
                   </div>
                   {/* <div className="p-6 bg-pink-50 rounded-lg border border-pink-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Designation ID</label>

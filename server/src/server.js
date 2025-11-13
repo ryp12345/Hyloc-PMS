@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { sequelize } = require('./setup/db');
 
 
@@ -19,6 +20,7 @@ const associationRoutes = require('./routes/association.routes');
 const qualificationRoutes = require('./routes/qualification.routes');
 const goalRoutes = require('./routes/goal.routes');
 const milestoneRoutes = require('./routes/milestone.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
 
@@ -27,6 +29,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Serve static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
@@ -48,6 +53,7 @@ app.use('/api/associations', associationRoutes);
 app.use('/api/qualifications', qualificationRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/milestones', milestoneRoutes);
+app.use('/api/upload', uploadRoutes);
 
 const PORT = process.env.PORT || 3001;
 

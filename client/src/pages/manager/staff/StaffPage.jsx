@@ -58,11 +58,14 @@ export default function StaffPage() {
       // Role filter
       const matchesRole = !filterRole || r.role === filterRole
       
-      // Department filter
+      // Department filter - handle new many-to-many relationship
       const matchesDept = !filterDept || 
+        String(r.staff?.Departments?.[0]?.id) === filterDept ||
+        String(r.staff?.Department?.id) === filterDept ||
         String(r.staff?.department_id) === filterDept ||
-        r.staff?.department === filterDept ||
-        r.staff?.Department?.dept_name === filterDept
+        r.staff?.Departments?.[0]?.dept_name === filterDept ||
+        r.staff?.Department?.dept_name === filterDept ||
+        r.staff?.department === filterDept
       
       return matchesSearch && matchesRole && matchesDept
     })

@@ -9,6 +9,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'active',
     },
-  }, { tableName: 'associations' });
+  }, { 
+    tableName: 'associations',
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  });
   return Association;
 };

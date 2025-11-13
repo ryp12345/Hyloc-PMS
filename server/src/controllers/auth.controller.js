@@ -34,8 +34,9 @@ exports.register = async (req, res) => {
         { 
           model: Staff, 
           include: [
-            { model: Department, as: 'Department' }, 
-            { model: Designation, as: 'Designation' }
+            { model: Department, as: 'Departments', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Designation, as: 'Designations', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Association, as: 'Associations', through: { attributes: ['start_date', 'end_date'] } }
           ] 
         }
       ] 
@@ -73,9 +74,9 @@ exports.login = async (req, res) => {
         {
           model: Staff,
           include: [
-            { model: Department, as: 'Department' },
-            { model: Designation, as: 'Designations', through: { attributes: [] } },
-            { model: Association, as: 'Associations', through: { attributes: [] } }
+            { model: Department, as: 'Departments', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Designation, as: 'Designations', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Association, as: 'Associations', through: { attributes: ['start_date', 'end_date'] } }
           ]
         }
       ]
@@ -114,9 +115,9 @@ exports.refresh = async (req, res) => {
         {
           model: Staff,
           include: [
-            { model: Department, as: 'Department' },
-            { model: Designation, as: 'Designations', through: { attributes: [] } },
-            { model: Association, as: 'Associations', through: { attributes: [] } }
+            { model: Department, as: 'Departments', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Designation, as: 'Designations', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Association, as: 'Associations', through: { attributes: ['start_date', 'end_date'] } }
           ]
         }
       ]
@@ -138,9 +139,9 @@ exports.me = async (req, res) => {
         {
           model: Staff,
           include: [
-            { model: Department, as: 'Department' },
-            { model: Designation, as: 'Designations', through: { attributes: [] } },
-            { model: Association, as: 'Associations', through: { attributes: [] } }
+            { model: Department, as: 'Departments', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Designation, as: 'Designations', through: { attributes: ['start_date', 'end_date'] } },
+            { model: Association, as: 'Associations', through: { attributes: ['start_date', 'end_date'] } }
           ]
         }
       ]

@@ -11,6 +11,17 @@ const BLOOD_GROUP_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 
 const RELATION_OPTIONS = ['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Son', 'Daughter', 'Other']
 
+const TPM_PILLAR_OPTIONS = [
+  'Focused Improvement',
+  'Autonomous Maintenance',
+  'Quality Maintenance',
+  'Planned Maintenance',
+  'Early Management',
+  'Training & Education',
+  'Safety, Environment & Health (SHE)',
+  'Administrative TPM'
+]
+
 export default function StaffPage() {
   const navigate = useNavigate()
   const [rows, setRows] = useState([])
@@ -20,6 +31,10 @@ export default function StaffPage() {
   const [departments, setDepartments] = useState([])
   const [designations, setDesignations] = useState([])
   const [associations, setAssociations] = useState([])
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false)
+  const [bulkFile, setBulkFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [bulkResults, setBulkResults] = useState(null)
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -27,8 +42,6 @@ export default function StaffPage() {
     password: '',
     staff: { 
       emp_id: '', 
-      designation: '', 
-      department: '', 
       designation_id: '', 
       department_id: '', 
       religion: '', 
@@ -41,8 +54,12 @@ export default function StaffPage() {
       emergency_contact_relation: '',
       pan_no: '',
       aadhar_no: '',
-      date_of_joining: ''
-      /*, salary: '' */ 
+      date_of_joining: '',
+      tpm_pillar: '',
+      staff_img: '',
+      award_recognition: '',
+      gender: '',
+      address: ''
     }
   })
   const RELIGION_OPTIONS = [
@@ -55,6 +72,9 @@ export default function StaffPage() {
     'Other'
   ];
   const [error, setError] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const load = async () => {
     try {
@@ -79,6 +99,8 @@ export default function StaffPage() {
   const onClose = () => {
     setIsModalOpen(false)
     setEditingId(null)
+    setImageFile(null)
+    setImagePreview(null)
     setForm({ 
       name: '', 
       email: '', 
@@ -86,8 +108,6 @@ export default function StaffPage() {
       password: '', 
       staff: { 
         emp_id: '', 
-        designation: '', 
-        department: '', 
         designation_id: '', 
         department_id: '', 
         religion: '', 
@@ -100,8 +120,12 @@ export default function StaffPage() {
         emergency_contact_relation: '',
         pan_no: '',
         aadhar_no: '',
-        date_of_joining: ''
-        /*, salary: '' */ 
+        date_of_joining: '',
+        tpm_pillar: '',
+        staff_img: '',
+        award_recognition: '',
+        gender: '',
+        address: ''
       } 
     })
     setError('')
@@ -111,6 +135,17 @@ export default function StaffPage() {
 
   const openEdit = (row) => {
     setEditingId(row.id)
+    // Handle new many-to-many relationships - get first active department/designation/association
+    const firstDepartment = row.staff?.Departments?.[0];
+    const firstDesignation = row.staff?.Designations?.[0];
+    const firstAssociation = row.staff?.Associations?.[0];
+    
+    // Set image preview if exists
+    if (row.staff?.staff_img) {
+      const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '')
+      setImagePreview(`${baseUrl}${row.staff.staff_img}`)
+    }
+    
     setForm({
       name: row.name || '',
       email: row.email || '',
@@ -118,12 +153,10 @@ export default function StaffPage() {
       password: '',
       staff: {
         emp_id: row.staff?.emp_id || '',
-        designation: row.staff?.designation || row.staff?.Designation?.designation_name || '',
-        department: row.staff?.department || row.staff?.Department?.dept_name || '',
-        designation_id: row.staff?.designation_id || row.staff?.Designation?.id || '',
-        department_id: row.staff?.department_id || row.staff?.Department?.id || '',
+        designation_id: firstDesignation?.id || row.staff?.designation_id || '',
+        department_id: firstDepartment?.id || row.staff?.department_id || '',
         religion: row.staff?.religion || '',
-        association_id: row.staff?.association_id || row.staff?.Association?.id || '',
+        association_id: firstAssociation?.id || row.staff?.association_id || '',
         date_of_birth: row.staff?.date_of_birth || '',
         phone_no: row.staff?.phone_no || '',
         blood_group: row.staff?.blood_group || '',
@@ -132,8 +165,12 @@ export default function StaffPage() {
         emergency_contact_relation: row.staff?.emergency_contact_relation || '',
         pan_no: row.staff?.pan_no || '',
         aadhar_no: row.staff?.aadhar_no || '',
-        date_of_joining: row.staff?.date_of_joining || ''
-        /*, salary: row.staff?.salary || '' */
+        date_of_joining: row.staff?.date_of_joining || '',
+        tpm_pillar: row.staff?.tpm_pillar || '',
+        staff_img: row.staff?.staff_img || '',
+        award_recognition: row.staff?.award_recognition || '',
+        gender: row.staff?.gender || '',
+        address: row.staff?.address || ''
       }
     })
     setIsModalOpen(true)
@@ -143,19 +180,80 @@ export default function StaffPage() {
     navigate(`/staff/view/${row.id}`)
   }
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should not exceed 5MB')
+        return
+      }
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file')
+        return
+      }
+      setImageFile(file)
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadImage = async (staffId, staffName) => {
+    if (!imageFile) return form.staff.staff_img
+    
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('staffImage', imageFile)
+      formData.append('staffId', staffId || form.staff.emp_id)
+      formData.append('staffName', staffName || form.name)
+      
+      const token = localStorage.getItem('accessToken') || JSON.parse(localStorage.getItem('auth') || '{}').accessToken
+      // Use the base URL without /api suffix for the upload
+      const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '')
+      const response = await fetch(`${baseUrl}/api/upload/staff-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Upload failed')
+      }
+      
+      const data = await response.json()
+      return data.path
+    } catch (err) {
+      console.error('Image upload error:', err)
+      throw err
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     try {
       const payload = { ...form }
-      // Ensure we also send the readable names matching selected ids for backwards compatibility
-      if (payload.staff?.department_id) {
-        const d = departments.find(x => String(x.id) === String(payload.staff.department_id))
-        if (d) payload.staff.department = d.dept_name
+      
+      // Upload image if selected
+      if (imageFile) {
+        const imagePath = await uploadImage(payload.staff.emp_id, payload.name)
+        payload.staff.staff_img = imagePath
       }
-      if (payload.staff?.designation_id) {
-        const d = designations.find(x => String(x.id) === String(payload.staff.designation_id))
-        if (d) payload.staff.designation = d.designation_name
+      
+      // Remove deprecated fields that no longer exist in the database
+      // The backend expects only the IDs, not the string names
+      if (payload.staff) {
+        delete payload.staff.department
+        delete payload.staff.designation
       }
 
       if (editingId) {
@@ -166,7 +264,7 @@ export default function StaffPage() {
       }
       onClose(); load()
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to save')
+      setError(e.response?.data?.message || e.message || 'Failed to save')
     }
   }
 
@@ -174,6 +272,72 @@ export default function StaffPage() {
     if (!confirm('Delete this staff user?')) return
     try { await api.delete(`/users/${id}`); load() } catch (e) { /* ignore */ }
   }
+
+  const downloadTemplate = async () => {
+    try {
+      const response = await api.get('/users/download-template', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'staff_upload_template.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to download template')
+    }
+  }
+
+  const handleBulkFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        setError('Please select a valid Excel file (.xlsx or .xls)')
+        return
+      }
+      setBulkFile(file)
+      setBulkResults(null)
+    }
+  }
+
+  const submitBulkUpload = async (e) => {
+    e.preventDefault()
+    if (!bulkFile) {
+      setError('Please select a file')
+      return
+    }
+
+    setUploading(true)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', bulkFile)
+
+      const response = await api.post('/users/bulk-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      setBulkResults(response.data)
+      setBulkFile(null)
+      
+      // Reload staff list
+      if (response.data.successCount > 0) {
+        load()
+      }
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to upload file')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const closeBulkUpload = () => {
+    setIsBulkUploadOpen(false)
+    setBulkFile(null)
+    setBulkResults(null)
+    setError('')
+  }
+
 
 
   // Pagination state
@@ -194,13 +358,17 @@ export default function StaffPage() {
       r.name?.toLowerCase().includes(q) ||
       r.email?.toLowerCase().includes(q) ||
       r.role?.toLowerCase().includes(q) ||
+      r.staff?.Departments?.[0]?.dept_name?.toLowerCase().includes(q) ||
+      r.staff?.Department?.dept_name?.toLowerCase().includes(q) ||
       r.staff?.department?.toLowerCase().includes(q) ||
+      r.staff?.Designations?.[0]?.name?.toLowerCase().includes(q) ||
+      r.staff?.Designation?.name?.toLowerCase().includes(q) ||
       r.staff?.designation?.toLowerCase().includes(q) ||
       r.staff?.religion?.toLowerCase().includes(q) ||
       r.staff?.phone_no?.toLowerCase().includes(q) ||
       r.staff?.emp_id?.toLowerCase().includes(q) ||
+      r.staff?.Associations?.[0]?.asso_name?.toLowerCase().includes(q) ||
       r.staff?.Association?.asso_name?.toLowerCase().includes(q)
-      // || String(r.staff?.salary || '').toLowerCase().includes(q)
     ));
   }, [rows, search]);
 
@@ -233,10 +401,18 @@ export default function StaffPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <button onClick={openCreate} className="flex items-center justify-center w-full px-6 py-3 font-medium text-white transition-all duration-300 transform rounded-lg shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:-translate-y-1 hover:scale-105 sm:w-auto">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
-            Add Staff
-          </button>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <button onClick={() => setIsBulkUploadOpen(true)} className="flex items-center justify-center px-6 py-3 font-medium text-white transition-all duration-300 transform rounded-lg shadow-lg bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 hover:-translate-y-1 hover:scale-105 flex-1 sm:flex-initial">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Staff Upload
+            </button>
+            <button onClick={openCreate} className="flex items-center justify-center px-6 py-3 font-medium text-white transition-all duration-300 transform rounded-lg shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:-translate-y-1 hover:scale-105 flex-1 sm:flex-initial">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+              Add Staff
+            </button>
+          </div>
         </div>
 
         <div className="mb-10 overflow-hidden bg-white shadow-xl rounded-xl">
@@ -262,9 +438,9 @@ export default function StaffPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm"><span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">{u.role}</span></td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Department?.dept_name || u.staff?.department || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Designation?.designation_name || u.staff?.designation || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Association?.asso_name || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Departments?.[0]?.dept_name || u.staff?.Department?.dept_name || u.staff?.department || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Designations?.[0]?.name || u.staff?.Designation?.name || u.staff?.designation || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Associations?.[0]?.asso_name || u.staff?.Association?.asso_name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex items-center justify-center space-x-2">
                           <button
@@ -346,7 +522,7 @@ export default function StaffPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Full Name</label>
-                        <input value={form.name} onChange={e=>setForm({ ...form, name: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Your Name" required />
+                        <input value={form.name} onChange={e=>setForm({ ...form, name: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Your Name" required maxLength="100" />
                       </div>
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
@@ -371,7 +547,7 @@ export default function StaffPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Employee ID</label>
-                          <input required value={form.staff.emp_id} onChange={e=>setForm({ ...form, staff: { ...form.staff, emp_id: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="EMP001" />
+                          <input required value={form.staff.emp_id} onChange={e=>setForm({ ...form, staff: { ...form.staff, emp_id: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="EMP001" maxLength="20" />
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Date of Birth</label>
@@ -393,6 +569,54 @@ export default function StaffPage() {
                               <option key={bg} value={bg}>{bg}</option>
                             ))}
                           </select>
+                        </div>
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Gender</label>
+                          <div className="flex items-center gap-6 px-4 py-3">
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="radio"
+                                name="gender"
+                                value="Male"
+                                checked={form.staff.gender === 'Male'}
+                                onChange={e=>setForm({ ...form, staff: { ...form.staff, gender: e.target.value } })}
+                                className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">Male</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="radio"
+                                name="gender"
+                                value="Female"
+                                checked={form.staff.gender === 'Female'}
+                                onChange={e=>setForm({ ...form, staff: { ...form.staff, gender: e.target.value } })}
+                                className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">Female</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="radio"
+                                name="gender"
+                                value="Other"
+                                checked={form.staff.gender === 'Other'}
+                                onChange={e=>setForm({ ...form, staff: { ...form.staff, gender: e.target.value } })}
+                                className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">Other</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Address</label>
+                          <textarea 
+                            value={form.staff.address} 
+                            onChange={e=>setForm({ ...form, staff: { ...form.staff, address: e.target.value } })} 
+                            className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                            placeholder="Enter full address..." 
+                            rows="2"
+                          />
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Department</label>
@@ -447,6 +671,19 @@ export default function StaffPage() {
                           </select>
                         </div>
                         <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">TPM Pillar</label>
+                          <select
+                            value={form.staff.tpm_pillar}
+                            onChange={e=>setForm({ ...form, staff: { ...form.staff, tpm_pillar: e.target.value } })}
+                            className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">Select TPM Pillar</option>
+                            {TPM_PILLAR_OPTIONS.map(pillar => (
+                              <option key={pillar} value={pillar}>{pillar}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Date of Joining</label>
                           <input type="date" value={form.staff.date_of_joining} onChange={e=>setForm({ ...form, staff: { ...form.staff, date_of_joining: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
                         </div>
@@ -457,6 +694,27 @@ export default function StaffPage() {
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Aadhar Number</label>
                           <input value={form.staff.aadhar_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, aadhar_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="123456789012" maxLength="12" />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Staff Image</label>
+                          <div className="flex items-center gap-4">
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleImageChange}
+                              className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                            {imagePreview && (
+                              <div className="flex-shrink-0">
+                                <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded-lg border-2 border-indigo-300" />
+                              </div>
+                            )}
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">Upload staff photo (Max 5MB, formats: JPG, PNG, GIF, WebP)</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block mb-2 text-sm font-medium text-gray-700">Award & Recognition</label>
+                          <textarea value={form.staff.award_recognition} onChange={e=>setForm({ ...form, staff: { ...form.staff, award_recognition: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter awards and recognitions..." rows="3" />
                         </div>
                       </div>
                     </div>
@@ -495,9 +753,168 @@ export default function StaffPage() {
 
                     <div className="flex justify-end space-x-4 pt-4">
                       <button type="button" onClick={onClose} className="inline-flex justify-center px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Cancel</button>
-                      <button type="submit" className="inline-flex justify-center px-6 py-3 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">{editingId? 'Update Staff':'Create Staff'}</button>
+                      <button 
+                        type="submit" 
+                        disabled={uploadingImage}
+                        className="inline-flex justify-center px-6 py-3 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploadingImage ? 'Uploading...' : (editingId ? 'Update Staff' : 'Create Staff')}
+                      </button>
                     </div>
                   </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Upload Modal */}
+        {isBulkUploadOpen && (
+          <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+            <div className="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={closeBulkUpload} />
+              <div className="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <div className="px-6 py-4 bg-gradient-to-r from-green-600 to-teal-600">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium leading-6 text-white">Bulk Staff Upload</h3>
+                    <button className="text-white hover:text-gray-200" onClick={closeBulkUpload}>
+                      <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="px-6 py-5 bg-white">
+                  {error && <div className="mb-4 p-3 rounded border border-red-200 text-red-700 bg-red-50 text-sm">{error}</div>}
+                  
+                  {!bulkResults ? (
+                    <form className="space-y-5" onSubmit={submitBulkUpload}>
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 className="font-semibold text-blue-900 mb-2">Instructions:</h4>
+                        <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                          <li>Download the Excel template by clicking the button below</li>
+                          <li>Fill in the staff details in the template (one staff per row)</li>
+                          <li>Ensure Department, Designation, and Association names match exactly with existing records</li>
+                          <li>Upload the completed Excel file</li>
+                          <li>Review the results and fix any errors if needed</li>
+                        </ol>
+                      </div>
+
+                      <div className="flex justify-center">
+                        <button 
+                          type="button"
+                          onClick={downloadTemplate}
+                          className="flex items-center px-6 py-3 font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Download Excel Template
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">Upload Excel File</label>
+                        <input 
+                          type="file" 
+                          accept=".xlsx,.xls" 
+                          onChange={handleBulkFileChange}
+                          className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          required
+                        />
+                        {bulkFile && (
+                          <p className="mt-2 text-sm text-gray-600">Selected: {bulkFile.name}</p>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end space-x-4 pt-4">
+                        <button type="button" onClick={closeBulkUpload} className="inline-flex justify-center px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">Cancel</button>
+                        <button 
+                          type="submit" 
+                          disabled={uploading || !bulkFile}
+                          className="inline-flex justify-center px-6 py-3 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {uploading ? 'Uploading...' : 'Upload Staff'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <div className="text-sm text-blue-600 font-medium">Total Rows</div>
+                          <div className="text-2xl font-bold text-blue-900">{bulkResults.total}</div>
+                        </div>
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <div className="text-sm text-green-600 font-medium">Successful</div>
+                          <div className="text-2xl font-bold text-green-900">{bulkResults.successCount}</div>
+                        </div>
+                        <div className="p-4 bg-red-50 rounded-lg">
+                          <div className="text-sm text-red-600 font-medium">Failed</div>
+                          <div className="text-2xl font-bold text-red-900">{bulkResults.errorCount}</div>
+                        </div>
+                      </div>
+
+                      {bulkResults.results.success.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold text-green-800 mb-2">Successfully Added:</h4>
+                          <div className="max-h-40 overflow-y-auto border border-green-200 rounded">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-green-50">
+                                <tr>
+                                  <th className="px-4 py-2 text-left">Row</th>
+                                  <th className="px-4 py-2 text-left">Name</th>
+                                  <th className="px-4 py-2 text-left">Email</th>
+                                  <th className="px-4 py-2 text-left">Employee ID</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bulkResults.results.success.map((item, idx) => (
+                                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
+                                    <td className="px-4 py-2">{item.row}</td>
+                                    <td className="px-4 py-2">{item.name}</td>
+                                    <td className="px-4 py-2">{item.email}</td>
+                                    <td className="px-4 py-2">{item.empId}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {bulkResults.results.errors.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold text-red-800 mb-2">Errors:</h4>
+                          <div className="max-h-60 overflow-y-auto border border-red-200 rounded">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-red-50">
+                                <tr>
+                                  <th className="px-4 py-2 text-left">Row</th>
+                                  <th className="px-4 py-2 text-left">Error</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bulkResults.results.errors.map((item, idx) => (
+                                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-red-50'}>
+                                    <td className="px-4 py-2">{item.row}</td>
+                                    <td className="px-4 py-2 text-red-700">{item.error}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end space-x-4 pt-4">
+                        <button 
+                          onClick={closeBulkUpload}
+                          className="inline-flex justify-center px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'active',
     },
-  }, { tableName: 'designations' });
+  }, { 
+    tableName: 'designations',
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  });
   return Designation;
 };
