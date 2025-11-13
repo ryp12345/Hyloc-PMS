@@ -1,4 +1,4 @@
-const { Goal, User, Department, Milestone } = require('../models');
+const { Goal, User, Department } = require('../models');
 const { sequelize } = require('../setup/db');
 
 exports.create = async (req, res) => {
@@ -26,8 +26,7 @@ exports.findAll = async (req, res) => {
       where,
       include: [
         { model: Department, as: 'Department', required: false },
-        { model: User, as: 'Owner', attributes: ['id', 'name', 'email'], required: false },
-        { model: Milestone, as: 'milestones', required: false }
+        { model: User, as: 'Owner', attributes: ['id', 'name', 'email'], required: false }
       ],
       order: [['createdAt', 'DESC']]
     });
@@ -45,10 +44,8 @@ exports.findOne = async (req, res) => {
     const goal = await Goal.findByPk(req.params.id, {
       include: [
         { model: Department, as: 'Department', required: false },
-        { model: User, as: 'Owner', attributes: ['id', 'name', 'email'], required: false },
-        { model: Milestone, as: 'milestones', required: false }
-      ],
-      order: [[{ model: Milestone, as: 'milestones' }, 'from_date', 'ASC']]
+        { model: User, as: 'Owner', attributes: ['id', 'name', 'email'], required: false }
+      ]
     });
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
@@ -70,8 +67,7 @@ exports.update = async (req, res) => {
     const updated = await Goal.findByPk(req.params.id, {
       include: [
         { model: Department, as: 'Department', required: false },
-        { model: User, as: 'Owner', attributes: ['id', 'name', 'email'], required: false },
-        { model: Milestone, as: 'milestones', required: false }
+        { model: User, as: 'Owner', attributes: ['id', 'name', 'email'], required: false }
       ]
     });
     res.json(updated);

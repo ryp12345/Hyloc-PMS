@@ -105,7 +105,7 @@ export default function KMIPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-12 text-center">
           <h1 className="mb-2 text-4xl font-extrabold text-gray-900">KMI Management</h1>
-          <p className="text-lg text-gray-600">Key Management Indicators - Define and track strategic milestones</p>
+          <p className="text-lg text-gray-600">Key Management Indicators - Define and track strategic metrics</p>
         </div>
 
         <div className="flex flex-col items-start justify-between gap-4 mb-6 sm:flex-row sm:items-center">

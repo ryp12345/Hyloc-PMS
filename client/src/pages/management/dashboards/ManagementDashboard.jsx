@@ -31,7 +31,7 @@ export default function ManagementDashboard() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">KMI</p>
-                    <p className="text-xs text-gray-600">Manage milestones</p>
+                    <p className="text-xs text-gray-600">Manage indicators</p>
                   </div>
                 </a>
                 <a href="/manager/staff" className="flex items-center p-3 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-indigo-300">
@@ -81,7 +81,7 @@ export default function ManagementDashboard() {
               </h2>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-600">Strategic milestones and pending approvals will appear here</p>
+              <p className="text-sm text-gray-600">Strategic goals and pending approvals will appear here</p>
             </div>
           </div>
         </div>
