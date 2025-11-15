@@ -6,6 +6,9 @@ export const leavesService = {
   getMyLeaves: () => 
     leavesApi.get('/leaves/mine'),
   
+  getLeaveBalance: () => 
+    leavesApi.get('/leaves/balance'),
+  
   getAllLeaves: () => 
     leavesApi.get('/leaves'),
   
@@ -24,9 +27,13 @@ export const leavesService = {
   approveLeave: (id) => 
     leavesApi.post(`/leaves/${id}/approve`),
   
-  rejectLeave: (id) => 
-    leavesApi.post(`/leaves/${id}/reject`),
+  rejectLeave: (id, data) => 
+    leavesApi.post(`/leaves/${id}/reject`, data),
   
   deleteLeave: (id) => 
     leavesApi.delete(`/leaves/${id}`),
+
+  // User leave history by year (self or HR/Management)
+  getUserLeaveHistory: (userId, year) => 
+    leavesApi.get(`/users/${userId}/leave-history`, { params: { year } }),
 }

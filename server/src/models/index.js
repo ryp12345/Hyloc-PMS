@@ -11,6 +11,7 @@ const KAI = require('./kai.model')(sequelize, DataTypes);
 const Task = require('./task.model')(sequelize, DataTypes);
 const Ticket = require('./ticket.model')(sequelize, DataTypes);
 const Leave = require('./leave.model')(sequelize, DataTypes);
+const LeaveEntitlement = require('./leave_entitlement.model')(sequelize, DataTypes);
 const Goal = require('./goal.model')(sequelize, DataTypes);
 const Department = require('./department.model')(sequelize, DataTypes);
 const Designation = require('./designation.model')(sequelize, DataTypes);
@@ -99,6 +100,9 @@ Task.belongsTo(User, { as: 'Assigner', foreignKey: 'assigned_by' });
 User.hasMany(Leave);
 Leave.belongsTo(User);
 
+User.hasMany(LeaveEntitlement, { foreignKey: 'user_id' });
+LeaveEntitlement.belongsTo(User, { foreignKey: 'user_id' });
+
 User.hasMany(Ticket, { as: 'CreatedTickets', foreignKey: 'created_by' });
 User.hasMany(Ticket, { as: 'AssignedTickets', foreignKey: 'assigned_to' });
 Ticket.belongsTo(User, { as: 'Creator', foreignKey: 'created_by' });
@@ -123,6 +127,7 @@ module.exports = {
   Task,
   Ticket,
   Leave,
+  LeaveEntitlement,
   Goal,
   Department,
   Designation,

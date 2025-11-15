@@ -22,6 +22,8 @@ router.get('/staff-names', ctrl.getStaffNames); // Must be before /:id route
 router.get('/staff-by-department', ctrl.getStaffByDepartment); // Must be before /:id route
 router.get('/download-template', ctrl.downloadTemplate); // Download Excel template
 router.post('/bulk-upload', upload.single('file'), ctrl.bulkCreate); // Bulk upload
+// User leave history by year (self or HR/Management)
+router.get('/:userId/leave-history', ctrl.getUserLeaveHistory); // Must be before /:id route
 router.get('/', ctrl.list);
 router.get('/:id', ctrl.get);
 router.post('/', ctrl.create);
