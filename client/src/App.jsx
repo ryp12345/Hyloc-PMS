@@ -11,7 +11,7 @@ import KAIPage from './pages/employee/kai/KAIPage'
 import TasksPage from './pages/common/tasks/TasksPage'
 import TicketsPage from './pages/common/tickets/TicketsPage'
 import LeavesPage from './pages/common/leaves/LeavesPage'
-import LeaveApprovalsPage from './pages/common/leaves/LeaveApprovalsPage'
+//import LeaveApprovalsPage from './pages/common/leaves/LeaveApprovalsPage'
 import LeaveApprovalPage from './pages/manager/leaves/LeaveApprovalPage'
 // DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar variant)
 // import CalendarPage from './pages/common/calendar/CalendarPage'
@@ -52,7 +52,7 @@ export default function App() {
           <Route path="tasks" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><TasksPage /></ProtectedRoute>} />
           <Route path="tickets" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><TicketsPage /></ProtectedRoute>} />
           <Route path="leaves" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><LeavesPage /></ProtectedRoute>} />
-          <Route path="leave-approvals" element={<ProtectedRoute roles={['Manager','Management']}><LeaveApprovalsPage /></ProtectedRoute>} />
+          {/* /<Route path="leave-approvals" element={<ProtectedRoute roles={['Manager','Management']}><LeaveApprovalsPage /></ProtectedRoute>} /> */}
           <Route path="leave-approval" element={<ProtectedRoute roles={['Manager','Management']}><LeaveApprovalPage /></ProtectedRoute>} />
           {/* DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar variant)
           <Route path="calendar" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><CalendarPage /></ProtectedRoute>} />

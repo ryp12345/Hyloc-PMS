@@ -573,8 +573,8 @@ export default function LeaveCalendar({
                     >
                       <option value="">-- Select alternate person --</option>
                       {departmentStaff.map(s => (
-                        <option key={s.id} value={s.name}>
-                          {s.name} {s.designation ? `(${s.designation})` : ''}
+                        <option key={s.id} value={s.fullName}>
+                          {s.fullName} {s.designation ? `(${s.designation})` : ''}
                         </option>
                       ))}
                     </select>
@@ -596,8 +596,8 @@ export default function LeaveCalendar({
                     >
                       <option value="">-- Select additional alternate --</option>
                       {allStaff.map(s => (
-                        <option key={s.id} value={s.name}>
-                          {s.name} {s.designation ? `(${s.designation})` : ''}
+                        <option key={s.id} value={s.fullName}>
+                          {s.fullName} {s.designation ? `(${s.designation})` : ''}
                         </option>
                       ))}
                     </select>

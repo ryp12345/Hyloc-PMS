@@ -33,43 +33,6 @@ export default function ManagementDashboard() {
 
         <KpiCards />
 
-        {/* Pending Leave Approvals Section */}
-        {pendingLeaves.length > 0 && (
-          <div className="mb-8 overflow-hidden bg-white shadow-xl rounded-xl">
-            <div className="px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-500">
-              <h2 className="flex items-center justify-between text-lg font-medium text-white">
-                <span className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Pending Leave Approvals
-                </span>
-                <span className="px-3 py-1 text-sm font-bold bg-white rounded-full text-orange-600">
-                  {pendingLeaves.length}
-                </span>
-              </h2>
-            </div>
-            <div className="p-6">
-              {loadingLeaves ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-4 border-orange-600 rounded-full border-t-transparent animate-spin"></div>
-                  <span className="ml-3 text-gray-600">Loading...</span>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {pendingLeaves.map(leave => (
-                    <PendingLeaveCard 
-                      key={leave.id} 
-                      leave={leave} 
-                      onApprovalChange={fetchPendingLeaves}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         <div className="grid gap-6 mt-8 md:grid-cols-3">
           <div className="overflow-hidden bg-white shadow-xl rounded-xl">
             <div className="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600">
@@ -126,7 +89,7 @@ export default function ManagementDashboard() {
                     <p className="text-xs text-gray-600">Manage tasks</p>
                   </div>
                 </a>
-                <a href="/leave-approvals" className="flex items-center p-3 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-green-300">
+                <a href="/leave-approval" className="flex items-center p-3 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-green-300">
                   <div className="p-2 mr-3 bg-green-500 rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
