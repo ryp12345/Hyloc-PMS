@@ -370,8 +370,8 @@ export default function TicketsPage() {
                         })()}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-xs">
-                        {t.Owner?.name ? (
-                          <div className="text-gray-900 font-medium">{t.Owner.name}</div>
+                        {t.Owner?.fullName || [t.Owner?.staff?.first_name, t.Owner?.staff?.last_name].filter(Boolean).join(' ') ? (
+                          <div className="text-gray-900 font-medium">{t.Owner.fullName || [t.Owner?.staff?.first_name, t.Owner?.staff?.last_name].filter(Boolean).join(' ')}</div>
                         ) : (
                           <span className="text-gray-400 italic">Unassigned</span>
                         )}
@@ -656,7 +656,7 @@ export default function TicketsPage() {
                         <option value="">Select Person</option>
                         {users.map(u => (
                           <option key={u.id} value={u.id}>
-                            {u.name} {u.role ? `- ${u.role}` : ''} {u.email ? `(${u.email})` : ''}
+                            {u.fullName || [u.staff?.first_name, u.staff?.last_name].filter(Boolean).join(' ') || u.email} {u.role ? `- ${u.role}` : ''} {u.email && !u.fullName ? '' : `(${u.email})`}
                           </option>
                         ))}
                       </select>

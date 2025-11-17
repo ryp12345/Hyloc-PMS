@@ -161,7 +161,7 @@ export default function DashboardLayout() {
         <div className="px-8 py-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-10">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Welcome - {user?.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900">Welcome - {user?.fullName || user?.email}</h2>
             </div>
             <div className="relative" ref={dropdownRef}>
               <button 

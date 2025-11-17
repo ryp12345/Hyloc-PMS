@@ -126,7 +126,7 @@ export default function LeaveApprovalsPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                             <h3 className="text-lg font-semibold text-gray-900">
-                              {leave.User?.name || 'Unknown'}
+                              {leave.User?.fullName || [leave.User?.staff?.first_name, leave.User?.staff?.middle_name, leave.User?.staff?.last_name].filter(Boolean).join(' ') || 'Unknown'}
                             </h3>
                             {/* Role Badge */}
                             <span className={`ml-2 px-2 py-0.5 text-xs font-semibold rounded ${

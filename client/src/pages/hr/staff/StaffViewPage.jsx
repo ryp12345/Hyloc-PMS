@@ -147,7 +147,7 @@ export default function StaffViewPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="py-3 border-b border-gray-100">
                     <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
-                    <p className="text-sm font-medium text-gray-900">{staff.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{[staff.staff?.first_name, staff.staff?.middle_name, staff.staff?.last_name].filter(Boolean).join(' ') || staff.fullName || '-'}</p>
                   </div>
                   <div className="py-3 border-b border-gray-100">
                     <label className="block text-xs font-medium text-gray-500 mb-1">Email Address</label>

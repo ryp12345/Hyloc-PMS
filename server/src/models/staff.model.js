@@ -2,7 +2,9 @@ module.exports = (sequelize, DataTypes) => {
   const Staff = sequelize.define('Staff', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     emp_id: { type: DataTypes.STRING(20), allowNull: true },
-    name: { type: DataTypes.STRING(100), allowNull: true },
+    first_name: { type: DataTypes.STRING(100), allowNull: true },
+    middle_name: { type: DataTypes.STRING(100), allowNull: true },
+    last_name: { type: DataTypes.STRING(100), allowNull: true },
     // Foreign keys present in DB
     user_id: { type: DataTypes.UUID, allowNull: true },
     // Domain fields per DB

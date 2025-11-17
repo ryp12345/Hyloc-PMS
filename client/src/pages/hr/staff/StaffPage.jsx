@@ -36,11 +36,12 @@ export default function StaffPage() {
   const [uploading, setUploading] = useState(false)
   const [bulkResults, setBulkResults] = useState(null)
   const [form, setForm] = useState({
-    name: '',
     email: '',
     roleName: 'Employee',
-    password: '',
     staff: { 
+      first_name: '',
+      middle_name: '',
+      last_name: '',
       emp_id: '', 
       designation_id: '', 
       department_id: '', 
@@ -102,11 +103,12 @@ export default function StaffPage() {
     setImageFile(null)
     setImagePreview(null)
     setForm({ 
-      name: '', 
       email: '', 
       roleName: 'Employee', 
-      password: '', 
       staff: { 
+        first_name: '',
+        middle_name: '',
+        last_name: '',
         emp_id: '', 
         designation_id: '', 
         department_id: '', 
@@ -147,11 +149,12 @@ export default function StaffPage() {
     }
     
     setForm({
-      name: row.name || '',
       email: row.email || '',
       roleName: row.role || 'Employee',
-      password: '',
       staff: {
+        first_name: row.staff?.first_name || '',
+        middle_name: row.staff?.middle_name || '',
+        last_name: row.staff?.last_name || '',
         emp_id: row.staff?.emp_id || '',
         designation_id: firstDesignation?.id || row.staff?.designation_id || '',
         department_id: firstDepartment?.id || row.staff?.department_id || '',
@@ -209,7 +212,8 @@ export default function StaffPage() {
       const formData = new FormData()
       formData.append('staffImage', imageFile)
       formData.append('staffId', staffId || form.staff.emp_id)
-      formData.append('staffName', staffName || form.name)
+      const fullName = staffName || [form.staff.first_name, form.staff.middle_name, form.staff.last_name].filter(Boolean).join(' ')
+      formData.append('staffName', fullName)
       
       const token = localStorage.getItem('accessToken') || JSON.parse(localStorage.getItem('auth') || '{}').accessToken
       // Use the base URL without /api suffix for the upload
@@ -245,7 +249,8 @@ export default function StaffPage() {
       
       // Upload image if selected
       if (imageFile) {
-        const imagePath = await uploadImage(payload.staff.emp_id, payload.name)
+        const fullName = [form.staff.first_name, form.staff.middle_name, form.staff.last_name].filter(Boolean).join(' ')
+        const imagePath = await uploadImage(payload.staff.emp_id, fullName)
         payload.staff.staff_img = imagePath
       }
       
@@ -259,7 +264,7 @@ export default function StaffPage() {
       if (editingId) {
         await api.put(`/users/${editingId}`, payload)
       } else {
-        if (!payload.password) payload.password = 'password123'
+        // Backend will set password123 as default
         await api.post('/users', payload)
       }
       onClose(); load()
@@ -354,9 +359,11 @@ export default function StaffPage() {
       return (b.id || 0) - (a.id || 0);
     });
     const q = search.toLowerCase();
-    return sorted.filter(r => (
-      r.name?.toLowerCase().includes(q) ||
-      r.email?.toLowerCase().includes(q) ||
+    return sorted.filter(r => {
+      const fullName = [r.staff?.first_name, r.staff?.middle_name, r.staff?.last_name].filter(Boolean).join(' ').toLowerCase();
+      return (
+        fullName.includes(q) ||
+        r.email?.toLowerCase().includes(q) ||
       r.role?.toLowerCase().includes(q) ||
       r.staff?.Departments?.[0]?.dept_name?.toLowerCase().includes(q) ||
       r.staff?.Department?.dept_name?.toLowerCase().includes(q) ||
@@ -367,12 +374,11 @@ export default function StaffPage() {
       r.staff?.religion?.toLowerCase().includes(q) ||
       r.staff?.phone_no?.toLowerCase().includes(q) ||
       r.staff?.emp_id?.toLowerCase().includes(q) ||
-      r.staff?.Associations?.[0]?.asso_name?.toLowerCase().includes(q) ||
-      r.staff?.Association?.asso_name?.toLowerCase().includes(q)
-    ));
-  }, [rows, search]);
-
-  // Paginated data
+        r.staff?.Associations?.[0]?.asso_name?.toLowerCase().includes(q) ||
+        r.staff?.Association?.asso_name?.toLowerCase().includes(q)
+      );
+    });
+  }, [rows, search]);  // Paginated data
   const paginated = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
@@ -436,7 +442,7 @@ export default function StaffPage() {
                   paginated.map((u, idx) => (
                     <tr key={u.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{(page - 1) * PAGE_SIZE + idx + 1}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{[u.staff?.first_name, u.staff?.middle_name, u.staff?.last_name].filter(Boolean).join(' ') || u.fullName || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm"><span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">{u.role}</span></td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Departments?.[0]?.dept_name || u.staff?.Department?.dept_name || u.staff?.department || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Designations?.[0]?.name || u.staff?.Designation?.name || u.staff?.designation || '-'}</td>
@@ -519,21 +525,25 @@ export default function StaffPage() {
                 <div className="px-6 py-5 bg-white">
                   {error && <div className="mb-4 p-3 rounded border border-red-200 text-red-700 bg-red-50 text-sm">{error}</div>}
                   <form className="space-y-5" onSubmit={submit}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">Full Name</label>
-                        <input value={form.name} onChange={e=>setForm({ ...form, name: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Your Name" required maxLength="100" />
+                        <label className="block mb-2 text-sm font-medium text-gray-700">First Name *</label>
+                        <input value={form.staff.first_name} onChange={e=>setForm({ ...form, staff: { ...form.staff, first_name: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="First Name" required maxLength="100" />
                       </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">Middle Name</label>
+                        <input value={form.staff.middle_name} onChange={e=>setForm({ ...form, staff: { ...form.staff, middle_name: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Middle Name" maxLength="100" />
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">Last Name</label>
+                        <input value={form.staff.last_name} onChange={e=>setForm({ ...form, staff: { ...form.staff, last_name: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Last Name" maxLength="100" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
                         <input type="email" value={form.email} onChange={e=>setForm({ ...form, email: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Email Address" required />
                       </div>
-                      {!editingId && (
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">Password</label>
-                          <input type="text" value={form.password} onChange={e=>setForm({ ...form, password: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="password123 (default if empty)" />
-                        </div>
-                      )}
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Role</label>
                         <select value={form.roleName} onChange={e=>setForm({ ...form, roleName: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">

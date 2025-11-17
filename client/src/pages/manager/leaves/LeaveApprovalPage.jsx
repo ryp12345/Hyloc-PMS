@@ -40,7 +40,8 @@ export default function LeaveApprovalPage() {
   const filteredLeaves = useMemo(() => {
     return leaves.filter(leave => {
       const matchesSearch = 
-        leave.User?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        leave.User?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        [leave.User?.staff?.first_name, leave.User?.staff?.middle_name, leave.User?.staff?.last_name].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase()) ||
         leave.User?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         leave.alternate_person?.toLowerCase().includes(searchTerm.toLowerCase())
       
@@ -206,10 +207,10 @@ export default function LeaveApprovalPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="flex items-center justify-center w-10 h-10 font-semibold text-white rounded-full bg-gradient-to-r from-indigo-500 to-purple-500">
-                            {leave.User?.name?.charAt(0) || 'U'}
+                            {(leave.User?.fullName || [leave.User?.staff?.first_name, leave.User?.staff?.last_name].filter(Boolean).join(' '))?.charAt(0) || 'U'}
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{leave.User?.name || 'Unknown'}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">{leave.User?.fullName || [leave.User?.staff?.first_name, leave.User?.staff?.middle_name, leave.User?.staff?.last_name].filter(Boolean).join(' ') || 'Unknown'}</h3>
                             <p className="text-sm text-gray-600">{leave.User?.email}</p>
                           </div>
                           <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(leave.status)}`}>

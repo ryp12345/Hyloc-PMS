@@ -47,7 +47,7 @@ export default function StaffPage() {
     const q = search.toLowerCase()
     return sorted.filter(r => {
       // Search filter
-      const matchesSearch = r.name?.toLowerCase().includes(q) ||
+      const matchesSearch = (u.fullName || [u.staff?.first_name, u.staff?.middle_name, u.staff?.last_name].filter(Boolean).join(' '))?.toLowerCase().includes(q) ||
         r.email?.toLowerCase().includes(q) ||
         r.role?.toLowerCase().includes(q) ||
         r.staff?.department?.toLowerCase().includes(q) ||
@@ -169,7 +169,7 @@ export default function StaffPage() {
                     <tr key={u.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.staff?.emp_id || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.fullName || [u.staff?.first_name, u.staff?.middle_name, u.staff?.last_name].filter(Boolean).join(' ') || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">

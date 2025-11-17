@@ -60,7 +60,7 @@ export default function PendingLeaveCard({ leave, onApprovalChange }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 <h3 className="text-base font-semibold text-gray-900">
-                  {leave.User?.name || 'Unknown'}
+                  {leave.User?.fullName || [leave.User?.staff?.first_name, leave.User?.staff?.middle_name, leave.User?.staff?.last_name].filter(Boolean).join(' ') || 'Unknown'}
                 </h3>
               </div>
               <div className="ml-6 text-xs text-gray-600">
@@ -158,7 +158,7 @@ export default function PendingLeaveCard({ leave, onApprovalChange }) {
             </div>
             <div className="p-6">
               <p className="mb-4 text-sm text-gray-600">
-                Are you sure you want to reject this leave request from <strong>{leave.User?.name}</strong>?
+                Are you sure you want to reject this leave request from <strong>{leave.User?.fullName || [leave.User?.staff?.first_name, leave.User?.staff?.last_name].filter(Boolean).join(' ')}</strong>?
               </p>
               <textarea
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"

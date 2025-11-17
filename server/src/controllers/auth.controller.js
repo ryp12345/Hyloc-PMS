@@ -3,6 +3,17 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const { User, Role, Staff, Department, Designation, Association } = require('../models');
 
+// Helper function to build full name from staff name parts
+const buildFullName = (staff) => {
+  if (!staff) return '';
+  const parts = [
+    staff.first_name,
+    staff.middle_name,
+    staff.last_name
+  ].filter(Boolean);
+  return parts.join(' ');
+};
+
 function signAccessToken(user) {
   return jwt.sign({ id: user.id, role: user.Role?.name || user.roleName }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES || '15m',
@@ -19,7 +30,7 @@ exports.register = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  const { name, email, password, role = 'Employee' } = req.body;
+  const { email, password, role = 'Employee' } = req.body;
   try {
     const exists = await User.findOne({ where: { email }, include: Role });
     if (exists) return res.status(409).json({ message: 'Email already in use' });
@@ -27,7 +38,7 @@ exports.register = async (req, res) => {
     if (!roleRow) return res.status(400).json({ message: 'Invalid role' });
 
     const hashed = await bcrypt.hash(password, 10);
-    const created = await User.create({ name, email, password: hashed, RoleId: roleRow.id });
+    const created = await User.create({ email, password: hashed, RoleId: roleRow.id });
     const full = await User.findByPk(created.id, { 
       include: [
         Role, 
@@ -47,10 +58,10 @@ exports.register = async (req, res) => {
     res.json({ 
       user: { 
         id: full.id, 
-        name: full.name, 
         email: full.email, 
         role: full.Role.name,
-        staff: full.Staff 
+        staff: full.Staff,
+        fullName: buildFullName(full.Staff)
       }, 
       accessToken: access, 
       refreshToken: refresh 
@@ -90,10 +101,10 @@ exports.login = async (req, res) => {
     res.json({ 
       user: { 
         id: user.id, 
-        name: user.name, 
         email: user.email, 
         role: user.Role ? user.Role.name : null,
-        staff: user.Staff 
+        staff: user.Staff,
+        fullName: buildFullName(user.Staff)
       }, 
       accessToken: access, 
       refreshToken: refresh 
@@ -149,10 +160,10 @@ exports.me = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ 
       id: user.id, 
-      name: user.name, 
       email: user.email, 
       role: user.Role ? user.Role.name : null,
-      staff: user.Staff 
+      staff: user.Staff,
+      fullName: buildFullName(user.Staff)
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch profile' });

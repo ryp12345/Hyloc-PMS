@@ -183,7 +183,7 @@ export default function TasksPage() {
                           <div className="text-sm text-gray-600 max-w-xs truncate">{t.description || 'No description'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{assignedUser?.name || 'Unknown'}</div>
+                          <div className="text-sm text-gray-900">{assignedUser?.fullName || [assignedUser?.staff?.first_name, assignedUser?.staff?.last_name].filter(Boolean).join(' ') || 'Unknown'}</div>
                           {assignedUser?.designation && (
                             <div className="text-xs text-gray-500">{assignedUser.designation}</div>
                           )}
@@ -274,7 +274,7 @@ export default function TasksPage() {
                       <label className="block mb-2 text-sm font-medium text-gray-700">Assign To</label>
                       <select required className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" value={form.assigned_to} onChange={e=>setForm({...form, assigned_to:e.target.value})}>
                         <option value="">-- Select User --</option>
-                        {users.map(u => <option key={u.id} value={u.id}>{u.name}{u.designation ? ` (${u.designation})` : ''}</option>)}
+                        {users.map(u => <option key={u.id} value={u.id}>{u.fullName || [u.staff?.first_name, u.staff?.last_name].filter(Boolean).join(' ') || u.email}{u.designation ? ` (${u.designation})` : ''}</option>)}
                       </select>
                     </div>
                     <div>

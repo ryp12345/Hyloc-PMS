@@ -4,6 +4,34 @@ const ExcelJS = require('exceljs');
 const { Op } = require('sequelize');
 const { User, Role, Staff, Department, Designation, Association, Leave } = require('../models');
 
+// Helper function to build full name from staff name parts
+const buildFullName = (staff) => {
+  if (!staff) return '';
+  const parts = [
+    staff.first_name,
+    staff.middle_name,
+    staff.last_name
+  ].filter(Boolean);
+  return parts.join(' ');
+};
+
+// Helper function to split name into parts
+const splitName = (fullName) => {
+  const parts = (fullName || '').trim().split(/\s+/);
+  if (parts.length === 1) {
+    return { first_name: parts[0], middle_name: '', last_name: '' };
+  } else if (parts.length === 2) {
+    return { first_name: parts[0], middle_name: '', last_name: parts[1] };
+  } else if (parts.length >= 3) {
+    return {
+      first_name: parts[0],
+      middle_name: parts.slice(1, -1).join(' '),
+      last_name: parts[parts.length - 1]
+    };
+  }
+  return { first_name: '', middle_name: '', last_name: '' };
+};
+
 exports.list = async (req, res) => {
   if (!['Management', 'HR'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Forbidden' });
@@ -22,7 +50,13 @@ exports.list = async (req, res) => {
     ], 
     attributes: { exclude: ['password'] } 
   });
-  res.json(users.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.Role?.name, staff: u.Staff })));
+  res.json(users.map(u => ({ 
+    id: u.id, 
+    email: u.email, 
+    role: u.Role?.name, 
+    staff: u.Staff,
+    fullName: buildFullName(u.Staff)
+  })));
 };
 
 exports.get = async (req, res) => {
@@ -43,24 +77,30 @@ exports.get = async (req, res) => {
   if (req.user.id !== user.id && !['Management','HR'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  res.json({ id: user.id, name: user.name, email: user.email, role: user.Role?.name, staff: user.Staff });
+  res.json({ 
+    id: user.id, 
+    email: user.email, 
+    role: user.Role?.name, 
+    staff: user.Staff,
+    fullName: buildFullName(user.Staff)
+  });
 };
 
 exports.create = async (req, res) => {
   if (!['Management', 'HR'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  const { name, email, password, roleName = 'Employee', staff } = req.body;
+  const { email, password, roleName = 'Employee', staff } = req.body;
   
   try {
     const role = await Role.findOne({ where: { name: roleName } });
     if (!role) return res.status(400).json({ message: 'Invalid role' });
     const hashed = await bcrypt.hash(password || 'password123', 10);
-    const user = await User.create({ name, email, password: hashed, role_id: role.id });
+    const user = await User.create({ email, password: hashed, role_id: role.id });
     
     if (staff) {
       // Normalize payload and capture M2M ids
-      const payload = { ...staff, name: staff.name || name };
+      const payload = { ...staff };
       
       // Remove M2M fields before creating staff record
       let designationIds = [];
@@ -77,7 +117,9 @@ exports.create = async (req, res) => {
       
       // Clean up payload - remove ALL fields that are not in the staff model
       const cleanPayload = {
-        name: payload.name,
+        first_name: payload.first_name,
+        middle_name: payload.middle_name,
+        last_name: payload.last_name,
         emp_id: payload.emp_id,
         religion: payload.religion,
         date_of_birth: payload.date_of_birth,
@@ -139,7 +181,13 @@ exports.create = async (req, res) => {
         }
       ] 
     });
-    res.status(201).json({ id: full.id, name: full.name, email: full.email, role: full.Role.name, staff: full.Staff });
+    res.status(201).json({ 
+      id: full.id, 
+      email: full.email, 
+      role: full.Role.name, 
+      staff: full.Staff,
+      fullName: buildFullName(full.Staff)
+    });
   } catch (error) {
     console.error('Error creating user/staff:', error);
     res.status(500).json({ message: error.message || 'Failed to create user' });
@@ -152,8 +200,7 @@ exports.update = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'Not found' });
     const canManage = ['Management', 'HR'].includes(req.user.role);
     if (req.user.id !== user.id && !canManage) return res.status(403).json({ message: 'Forbidden' });
-    const { name, email, password, roleName, staff } = req.body;
-    if (name) user.name = name;
+    const { email, password, roleName, staff } = req.body;
     if (email) user.email = email;
     if (password) user.password = await bcrypt.hash(password, 10);
     if (roleName && canManage) {
@@ -180,7 +227,9 @@ exports.update = async (req, res) => {
       
       // Clean up payload - only keep staff model fields
       const cleanPayload = {
-        name: payload.name || user.name,
+        first_name: payload.first_name,
+        middle_name: payload.middle_name,
+        last_name: payload.last_name,
         emp_id: payload.emp_id,
         religion: payload.religion,
         date_of_birth: payload.date_of_birth,
@@ -246,7 +295,13 @@ exports.update = async (req, res) => {
         }
       ] 
     });
-    res.json({ id: full.id, name: full.name, email: full.email, role: full.Role?.name, staff: full.Staff });
+    res.json({ 
+      id: full.id, 
+      email: full.email, 
+      role: full.Role?.name, 
+      staff: full.Staff,
+      fullName: buildFullName(full.Staff)
+    });
   } catch (error) {
     console.error('Error updating user/staff:', error);
     res.status(500).json({ message: error.message || 'Failed to update user' });
@@ -361,13 +416,13 @@ exports.getUserLeaveHistory = async (req, res) => {
 exports.getStaffNames = async (req, res) => {
   const users = await User.findAll({ 
     include: [Role, Staff], 
-    attributes: ['id', 'name', 'email'] 
+    attributes: ['id', 'email'] 
   });
   // Include all users (including the logged-in user)
   res.json(users.map(u => ({ 
     id: u.id, 
-    name: u.name, 
     email: u.email,
+    fullName: buildFullName(u.Staff),
     role: u.Role?.name || null,
     designation: u.Staff?.designation || null 
   })));
@@ -394,12 +449,12 @@ exports.getStaffByDepartment = async (req, res) => {
         ]
       }
     ],
-    attributes: ['id', 'name']
+    attributes: ['id']
   });
   // Include all users (including the logged-in user)
   res.json(users.map(u => ({
     id: u.id,
-    name: u.name,
+    fullName: buildFullName(u.Staff),
     designation: u.Staff?.Designations?.[0]?.designation_name || null
   })));
 };
@@ -465,18 +520,21 @@ exports.bulkCreate = async (req, res) => {
 
       try {
         // Required fields validation
-        if (!row.Name || !row.Email || !row.EmployeeID) {
+        if (!row.FirstName || !row.Email || !row.EmployeeID) {
           results.errors.push({
             row: rowNum,
             data: row,
-            error: 'Missing required fields: Name, Email, or EmployeeID'
+            error: 'Missing required fields: FirstName, Email, or EmployeeID'
           });
           continue;
         }
 
         // Validate field lengths before creating staff
         const empId = row.EmployeeID ? String(row.EmployeeID).trim() : null;
-        const name = row.Name ? String(row.Name).trim() : null;
+        const firstName = row.FirstName ? String(row.FirstName).trim() : null;
+        const middleName = row.MiddleName ? String(row.MiddleName).trim() : '';
+        const lastName = row.LastName ? String(row.LastName).trim() : '';
+        const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
         const bloodGroup = row.BloodGroup ? String(row.BloodGroup).trim() : null;
         const panNo = row.PANNumber ? String(row.PANNumber).trim() : null;
         const aadharNo = row.AadharNumber ? String(row.AadharNumber).trim() : null;
@@ -502,11 +560,29 @@ exports.bulkCreate = async (req, res) => {
           continue;
         }
 
-        if (name && name.length > 100) {
+        if (firstName && firstName.length > 100) {
           results.errors.push({
             row: rowNum,
             data: row,
-            error: `Name exceeds 100 characters (current: ${name.length})`
+            error: `First Name exceeds 100 characters (current: ${firstName.length})`
+          });
+          continue;
+        }
+
+        if (middleName && middleName.length > 100) {
+          results.errors.push({
+            row: rowNum,
+            data: row,
+            error: `Middle Name exceeds 100 characters (current: ${middleName.length})`
+          });
+          continue;
+        }
+
+        if (lastName && lastName.length > 100) {
+          results.errors.push({
+            row: rowNum,
+            data: row,
+            error: `Last Name exceeds 100 characters (current: ${lastName.length})`
           });
           continue;
         }
@@ -618,10 +694,9 @@ exports.bulkCreate = async (req, res) => {
           }
         }
 
-        // Create user
-        const hashedPassword = await bcrypt.hash(row.Password || 'password123', 10);
+        // Create user with default password
+        const hashedPassword = await bcrypt.hash('password123', 10);
         const user = await User.create({
-          name: name,
           email: row.Email,
           password: hashedPassword,
           role_id: employeeRole.id
@@ -629,7 +704,9 @@ exports.bulkCreate = async (req, res) => {
 
         // Prepare staff data
         const staffPayload = {
-          name: name,
+          first_name: firstName,
+          middle_name: middleName,
+          last_name: lastName,
           emp_id: empId,
           religion: religion,
           date_of_birth: row.DateOfBirth || null,
@@ -674,7 +751,7 @@ exports.bulkCreate = async (req, res) => {
 
         results.success.push({
           row: rowNum,
-          name: row.Name,
+          name: fullName,
           email: row.Email,
           empId: row.EmployeeID
         });
@@ -742,9 +819,10 @@ exports.downloadTemplate = async (req, res) => {
 
     // Set column widths
     ws['!cols'] = [
-      { wch: 20 }, // Name
+      { wch: 20 }, // FirstName
+      { wch: 20 }, // MiddleName
+      { wch: 20 }, // LastName
       { wch: 30 }, // Email
-      { wch: 15 }, // Password
       { wch: 15 }, // EmployeeID
       { wch: 25 }, // Department
       { wch: 25 }, // Designation
@@ -918,9 +996,10 @@ exports.downloadTemplate = async (req, res) => {
 
     // Define columns in main worksheet
     worksheet.columns = [
-      { header: 'Name', key: 'name', width: 20 },
+      { header: 'FirstName', key: 'firstName', width: 20 },
+      { header: 'MiddleName', key: 'middleName', width: 20 },
+      { header: 'LastName', key: 'lastName', width: 20 },
       { header: 'Email', key: 'email', width: 30 },
-      { header: 'Password', key: 'password', width: 15 },
       { header: 'EmployeeID', key: 'employeeId', width: 15 },
       { header: 'Department', key: 'department', width: 25 },
       { header: 'Designation', key: 'designation', width: 25 },
@@ -953,9 +1032,9 @@ exports.downloadTemplate = async (req, res) => {
 
     // Add data validations (dropdowns) for rows 2 to 1001 using reference sheet
     for (let rowNum = 2; rowNum <= 1001; rowNum++) {
-      // Department dropdown (Column E) - Reference to hidden sheet
+      // Department dropdown (Column F) - Reference to hidden sheet
       if (departmentList.length > 0) {
-        worksheet.getCell(`E${rowNum}`).dataValidation = {
+        worksheet.getCell(`F${rowNum}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: [`DropdownData!$A$2:$A$${departmentList.length + 1}`],
@@ -965,9 +1044,9 @@ exports.downloadTemplate = async (req, res) => {
         };
       }
 
-      // Designation dropdown (Column F)
+      // Designation dropdown (Column G)
       if (designationList.length > 0) {
-        worksheet.getCell(`F${rowNum}`).dataValidation = {
+        worksheet.getCell(`G${rowNum}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: [`DropdownData!$B$2:$B$${designationList.length + 1}`],
@@ -977,8 +1056,8 @@ exports.downloadTemplate = async (req, res) => {
         };
       }
 
-      // Religion dropdown (Column G)
-      worksheet.getCell(`G${rowNum}`).dataValidation = {
+      // Religion dropdown (Column H)
+      worksheet.getCell(`H${rowNum}`).dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: [`DropdownData!$C$2:$C$${religionOptions.length + 1}`],
@@ -987,9 +1066,9 @@ exports.downloadTemplate = async (req, res) => {
         error: 'Please select a religion from the list'
       };
 
-      // Association dropdown (Column H)
+      // Association dropdown (Column I)
       if (associationList.length > 0) {
-        worksheet.getCell(`H${rowNum}`).dataValidation = {
+        worksheet.getCell(`I${rowNum}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: [`DropdownData!$D$2:$D$${associationList.length + 1}`],
@@ -999,8 +1078,8 @@ exports.downloadTemplate = async (req, res) => {
         };
       }
 
-      // Blood Group dropdown (Column K)
-      worksheet.getCell(`K${rowNum}`).dataValidation = {
+      // Blood Group dropdown (Column L)
+      worksheet.getCell(`L${rowNum}`).dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: [`DropdownData!$E$2:$E$${bloodGroupOptions.length + 1}`],
@@ -1009,8 +1088,8 @@ exports.downloadTemplate = async (req, res) => {
         error: 'Please select a blood group from the list'
       };
 
-      // Gender dropdown (Column L)
-      worksheet.getCell(`L${rowNum}`).dataValidation = {
+      // Gender dropdown (Column M)
+      worksheet.getCell(`M${rowNum}`).dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: ['DropdownData!$H$2:$H$4'],
@@ -1019,8 +1098,8 @@ exports.downloadTemplate = async (req, res) => {
         error: 'Please select a gender from the list'
       };
 
-      // Emergency Contact Relation dropdown (Column P)
-      worksheet.getCell(`P${rowNum}`).dataValidation = {
+      // Emergency Contact Relation dropdown (Column Q)
+      worksheet.getCell(`Q${rowNum}`).dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: [`DropdownData!$F$2:$F$${relationOptions.length + 1}`],
@@ -1029,8 +1108,8 @@ exports.downloadTemplate = async (req, res) => {
         error: 'Please select a relation from the list'
       };
 
-      // TPM Pillar dropdown (Column T)
-      worksheet.getCell(`T${rowNum}`).dataValidation = {
+      // TPM Pillar dropdown (Column U)
+      worksheet.getCell(`U${rowNum}`).dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: [`DropdownData!$G$2:$G$${tpmPillarOptions.length + 1}`],

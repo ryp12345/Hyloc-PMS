@@ -20,6 +20,7 @@ const designationRoutes = require('./routes/designation.routes');
 const associationRoutes = require('./routes/association.routes');
 const qualificationRoutes = require('./routes/qualification.routes');
 const goalRoutes = require('./routes/goal.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use('/api/designations', designationRoutes);
 app.use('/api/associations', associationRoutes);
 app.use('/api/qualifications', qualificationRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api/upload', uploadRoutes);
 
 const PORT = process.env.PORT || 3001;
 
