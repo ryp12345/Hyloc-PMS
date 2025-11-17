@@ -1,7 +1,8 @@
 const bcrypt = require('bcryptjs');
 const XLSX = require('xlsx');
 const ExcelJS = require('exceljs');
-const { User, Role, Staff, Department, Designation, Association } = require('../models');
+const { Op } = require('sequelize');
+const { User, Role, Staff, Department, Designation, Association, Leave } = require('../models');
 
 exports.list = async (req, res) => {
   if (!['Management', 'HR'].includes(req.user.role)) {
@@ -310,6 +311,49 @@ exports.remove = async (req, res) => {
   } catch (error) {
     console.error('Error deleting user/staff:', error);
     res.status(500).json({ message: error.message || 'Failed to delete user' });
+  }
+};
+
+// Get a user's leave history for a calendar year
+// Access: the user themself, or Management/HR
+// GET /api/users/:userId/leave-history?year=YYYY
+exports.getUserLeaveHistory = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+
+    // Authorization: allow self or HR/Management
+    const isSelf = req.user.id === userId;
+    const isAdmin = ['Management', 'HR'].includes(req.user.role);
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const start = new Date(Date.UTC(year, 0, 1)); // Jan 1 UTC
+    const end = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999)); // Dec 31 UTC end
+
+    // Return leaves that overlap the given year window
+    const rows = await Leave.findAll({
+      where: {
+        user_id: userId,
+        [Op.or]: [
+          { from_date: { [Op.between]: [start, end] } },
+          { to_date: { [Op.between]: [start, end] } },
+          {
+            [Op.and]: [
+              { from_date: { [Op.lt]: start } },
+              { to_date: { [Op.gt]: end } }
+            ]
+          }
+        ]
+      },
+      order: [ ['from_date', 'DESC'], ['created_at', 'DESC'] ]
+    });
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching user leave history:', error);
+    res.status(500).json({ message: 'Error fetching user leave history', error: error.message });
   }
 };
 

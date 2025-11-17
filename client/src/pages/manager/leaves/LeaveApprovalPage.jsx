@@ -9,7 +9,7 @@ export default function LeaveApprovalPage() {
 
   const load = async () => {
     try {
-      const res = await api.get('/leaves/all')
+      const res = await api.get('/leaves/pending')
       setLeaves(res.data)
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to load leaves')

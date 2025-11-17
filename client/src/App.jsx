@@ -10,9 +10,11 @@ import KPIPage from './pages/manager/kpi/KPIPage'
 import KAIPage from './pages/employee/kai/KAIPage'
 import TasksPage from './pages/common/tasks/TasksPage'
 import TicketsPage from './pages/common/tickets/TicketsPage'
-import LeavesPage from './pages/hr/leaves/LeavesPage'
+import LeavesPage from './pages/common/leaves/LeavesPage'
+import LeaveApprovalsPage from './pages/common/leaves/LeaveApprovalsPage'
 import LeaveApprovalPage from './pages/manager/leaves/LeaveApprovalPage'
-import CalendarPage from './pages/common/calendar/CalendarPage'
+// DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar variant)
+// import CalendarPage from './pages/common/calendar/CalendarPage'
 import AnalyticsPage from './pages/management/analytics/AnalyticsPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import StaffPage from './pages/hr/staff/StaffPage'
@@ -50,8 +52,11 @@ export default function App() {
           <Route path="tasks" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><TasksPage /></ProtectedRoute>} />
           <Route path="tickets" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><TicketsPage /></ProtectedRoute>} />
           <Route path="leaves" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><LeavesPage /></ProtectedRoute>} />
-          <Route path="leave-approval" element={<ProtectedRoute roles={['Manager','Management','HR']}><LeaveApprovalPage /></ProtectedRoute>} />
+          <Route path="leave-approvals" element={<ProtectedRoute roles={['Manager','Management']}><LeaveApprovalsPage /></ProtectedRoute>} />
+          <Route path="leave-approval" element={<ProtectedRoute roles={['Manager','Management']}><LeaveApprovalPage /></ProtectedRoute>} />
+          {/* DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar variant)
           <Route path="calendar" element={<ProtectedRoute roles={['Employee','Manager','Management','HR']}><CalendarPage /></ProtectedRoute>} />
+          */}
           <Route path="analytics" element={<ProtectedRoute roles={['Manager','Management']}><AnalyticsPage /></ProtectedRoute>} />
           <Route path="staff" element={<ProtectedRoute roles={['HR']}><StaffPage /></ProtectedRoute>} />
           <Route path="staff/view/:id" element={<ProtectedRoute roles={['HR']}><StaffViewPage /></ProtectedRoute>} />

@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchMyLeaves, applyLeave } from '../../../store/slices/leavesSlice'
 import { fetchStaffNames } from '../../../store/slices/usersSlice'
+import { leavesService } from '../../../api/leavesApi'
 import { api } from '../../../lib/api'
 import { useAuth } from '../../../auth/AuthContext'
+import LeaveStatistics from '../../../components/common/LeaveStatistics'
 
 export default function LeavesPage() {
   const dispatch = useDispatch()
@@ -12,8 +14,9 @@ export default function LeavesPage() {
   const { staffNames: staff } = useSelector((state) => state.users)
   
   const [form, setForm] = useState({
-    from_date: '',
+    from_date: new Date().toISOString().split('T')[0],
     to_date: '',
+    leave_duration: 'Full Day',
     alternate_person: '',
     additional_alternate: '',
     leave_reason: '',
@@ -22,11 +25,28 @@ export default function LeavesPage() {
   const [noOfDays, setNoOfDays] = useState(0)
   const [departmentStaff, setDepartmentStaff] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [leaveBalance, setLeaveBalance] = useState(null)
+  const [loadingBalance, setLoadingBalance] = useState(true)
 
   useEffect(() => {
     if (user) {
       dispatch(fetchMyLeaves())
       dispatch(fetchStaffNames())
+      
+      // Fetch leave balance
+      const fetchLeaveBalance = async () => {
+        try {
+          setLoadingBalance(true)
+          const response = await leavesService.getLeaveBalance()
+          setLeaveBalance(response.data)
+        } catch (error) {
+          console.error('Failed to fetch leave balance:', error)
+        } finally {
+          setLoadingBalance(false)
+        }
+      }
+      fetchLeaveBalance()
+      
       // Fetch department staff for alternate dropdown
       console.log('User data:', user)
       // Handle new many-to-many relationship
@@ -48,30 +68,75 @@ export default function LeavesPage() {
     }
   }, [dispatch, user])
 
-  // Calculate number of days
+  // Calculate number of days based on duration and dates
   useEffect(() => {
-    if (form.from_date && form.to_date) {
-      const from = new Date(form.from_date)
-      const to = new Date(form.to_date)
-      const diff = (to - from) / (1000 * 60 * 60 * 24) + 1
-      setNoOfDays(diff > 0 ? diff : 0)
+    if (form.leave_duration === 'Full Day') {
+      if (form.from_date && form.to_date) {
+        const from = new Date(form.from_date)
+        const to = new Date(form.to_date)
+        const diff = (to - from) / (1000 * 60 * 60 * 24) + 1
+        setNoOfDays(diff > 0 ? diff : 0)
+      } else {
+        setNoOfDays(0)
+      }
     } else {
-      setNoOfDays(0)
+      // Morning Half or Afternoon Half
+      setNoOfDays(0.5)
+      // Auto-set to_date to same as from_date for half-day
+      if (form.from_date && form.to_date !== form.from_date) {
+        setForm(prev => ({ ...prev, to_date: prev.from_date }))
+      }
     }
-  }, [form.from_date, form.to_date])
+  }, [form.from_date, form.to_date, form.leave_duration])
+
+  // Handle leave duration change
+  const handleDurationChange = (duration) => {
+    setForm(prev => ({
+      ...prev,
+      leave_duration: duration,
+      to_date: duration === 'Full Day' ? prev.to_date : prev.from_date
+    }))
+  }
 
   const apply = async (e) => {
     e.preventDefault()
-    await dispatch(applyLeave(form)).unwrap()
+    
+    // Check if user has sufficient leave balance
+    const creditedDays = noOfDays
+    const currentBalance = leaveBalance?.leave_balance || 0
+    
+    let leaveType = 'Paid'
+    if (currentBalance < creditedDays) {
+      const confirmUnpaid = window.confirm(
+        `No leaves to avail. You have only ${currentBalance} day(s) remaining. Do you still want to avail a leave? (It would be 'Unpaid')`
+      )
+      if (!confirmUnpaid) {
+        return // User cancelled
+      }
+      leaveType = 'Unpaid'
+    }
+    
+    const leaveData = {
+      ...form,
+      credited_days: creditedDays,
+      leave_type: leaveType
+    }
+    
+    await dispatch(applyLeave(leaveData)).unwrap()
     setForm({
-      from_date: '',
+      from_date: new Date().toISOString().split('T')[0],
       to_date: '',
+      leave_duration: 'Full Day',
       alternate_person: '',
       additional_alternate: '',
       leave_reason: '',
       available_on_phone: true
     })
     setNoOfDays(0)
+    
+    // Refresh leave balance after applying
+    const response = await leavesService.getLeaveBalance()
+    setLeaveBalance(response.data)
   }
 
   const filteredLeaves = leaves.filter(leave => 
@@ -100,6 +165,16 @@ export default function LeavesPage() {
           </p>
         </div>
 
+        {/* Leave Statistics */}
+        {loadingBalance ? (
+          <div className="flex items-center justify-center mb-8">
+            <div className="w-8 h-8 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+            <span className="ml-3 text-gray-600">Loading leave statistics...</span>
+          </div>
+        ) : (
+          <LeaveStatistics balance={leaveBalance} />
+        )}
+
         {/* Apply for Leave Form */}
         <div className="mb-10 overflow-hidden bg-white shadow-xl rounded-xl">
           <div className="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600">
@@ -113,6 +188,26 @@ export default function LeavesPage() {
           <div className="p-6">
             <form onSubmit={apply} className="space-y-5">
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">Leave Duration</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <select
+                      required
+                      className="block w-full py-3 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      value={form.leave_duration}
+                      onChange={e => handleDurationChange(e.target.value)}
+                    >
+                      <option value="Full Day">Full Day</option>
+                      <option value="Morning Half">Morning Half</option>
+                      <option value="Afternoon Half">Afternoon Half</option>
+                    </select>
+                  </div>
+                </div>
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">From Date</label>
                   <input
@@ -131,12 +226,14 @@ export default function LeavesPage() {
                     className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     value={form.to_date}
                     onChange={e=>setForm({...form, to_date:e.target.value})}
+                    disabled={form.leave_duration !== 'Full Day'}
                   />
                 </div>
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">No. of Days</label>
                   <input
                     type="number"
+                    step="0.5"
                     className="block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     value={noOfDays}
                     readOnly
@@ -197,17 +294,38 @@ export default function LeavesPage() {
                   </select>
                 </div>
               </div>
-              <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <input 
-                  id="available_on_phone"
-                  type="checkbox" 
-                  checked={form.available_on_phone} 
-                  onChange={e=>setForm({...form, available_on_phone:e.target.checked})} 
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="available_on_phone" className="ml-3 text-sm font-medium text-gray-700">
-                  I will be available on phone during this period
+              <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <label className="block mb-3 text-sm font-medium text-gray-700">
+                  Available on Phone
                 </label>
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center">
+                    <input 
+                      id="phone_yes"
+                      type="radio" 
+                      name="available_on_phone"
+                      checked={form.available_on_phone === true} 
+                      onChange={() => setForm({...form, available_on_phone: true})} 
+                      className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="phone_yes" className="ml-2 text-sm font-medium text-gray-700">
+                      Yes
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input 
+                      id="phone_no"
+                      type="radio" 
+                      name="available_on_phone"
+                      checked={form.available_on_phone === false} 
+                      onChange={() => setForm({...form, available_on_phone: false})} 
+                      className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="phone_no" className="ml-2 text-sm font-medium text-gray-700">
+                      No
+                    </label>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end pt-2">
                 <button 

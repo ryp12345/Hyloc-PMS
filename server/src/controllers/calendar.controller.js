@@ -1,3 +1,6 @@
+// DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar controller)
+// Entire controller is commented out to disable the duplicate calendar aggregation endpoint.
+/*
 const { Task, Leave } = require('../models');
 
 exports.events = async (req, res) => {
@@ -14,3 +17,4 @@ exports.events = async (req, res) => {
   }
   res.json(events);
 };
+*/

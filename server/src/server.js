@@ -13,7 +13,8 @@ const kaiRoutes = require('./routes/kai.routes');
 const taskRoutes = require('./routes/task.routes');
 const ticketRoutes = require('./routes/ticket.routes');
 const leaveRoutes = require('./routes/leave.routes');
-const calendarRoutes = require('./routes/calendar.routes');
+// DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar routes)
+// const calendarRoutes = require('./routes/calendar.routes');
 const departmentRoutes = require('./routes/department.routes');
 const designationRoutes = require('./routes/designation.routes');
 const associationRoutes = require('./routes/association.routes');
@@ -44,7 +45,8 @@ app.use('/api/kai', kaiRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/leaves', leaveRoutes);
-app.use('/api/calendar', calendarRoutes);
+// DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar routes)
+// app.use('/api/calendar', calendarRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/associations', associationRoutes);

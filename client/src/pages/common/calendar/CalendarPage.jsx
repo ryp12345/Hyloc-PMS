@@ -1,3 +1,18 @@
+// DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar variant)
+// This view is deprecated and intentionally disabled to remove the duplicate flow.
+
+export default function CalendarPage() {
+  return null
+}
+
+/*
+Original implementation was here and has been commented out to prevent the
+duplicate Calendar-based leave application flow. See LeaveDuplicate.md for
+the detailed diff and reasoning.
+
+BEGIN_DISABLED_DUPLICATE
+*/
+/*
 import { useEffect, useState } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -276,261 +291,16 @@ export default function CalendarPage() {
         <div className="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
           <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={closeModal} />
           <div className="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-            <div className="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium leading-6 text-white">
-                  {editingLeave ? 'View / Update Leave' : 'Apply for Leave'}
-                </h3>
-                <button className="text-white hover:text-gray-200" onClick={closeModal}>
-                  <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-            </div>
-            <div className="px-6 py-5 bg-white">
-              {editingLeave && (
-                <div className={`mb-4 p-3 rounded border ${
-                  editingLeave.status === 'Approved' ? 'border-green-200 bg-green-50 text-green-700' :
-                  editingLeave.status === 'Pending' ? 'border-yellow-200 bg-yellow-50 text-yellow-700' :
-                  'border-red-200 bg-red-50 text-red-700'
-                } text-sm flex items-center justify-between`}>
-                  <span className="flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    Status: <strong className="ml-1">{editingLeave.status}</strong>
-                  </span>
-                  {editingLeave.status === 'Pending' && (
-                    <span className="text-xs">(You can update pending leaves)</span>
-                  )}
-                </div>
-              )}
-              {error && <div className="mb-4 p-3 rounded border border-red-200 text-red-700 bg-red-50 text-sm">{error}</div>}
-              <form className="space-y-5" onSubmit={submitLeave}>
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">From Date</label>
-                    <input 
-                      required 
-                      type="date" 
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
-                      value={form.from_date} 
-                      onChange={e=>setForm({...form, from_date:e.target.value})} 
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">To Date</label>
-                    <input 
-                      required 
-                      type="date" 
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
-                      value={form.to_date} 
-                      onChange={e=>setForm({...form, to_date:e.target.value})} 
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">No. of Days</label>
-                    <input
-                      type="number"
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                      value={noOfDays}
-                      readOnly
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">Leave Reason</label>
-                    <input
-                      required
-                      type="text"
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={form.leave_reason}
-                      onChange={e=>setForm({...form, leave_reason:e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">Alternate Person (Department Only)</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <select
-                      className="block w-full py-3 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={form.alternate_person}
-                      onChange={e=>setForm({...form, alternate_person:e.target.value})}
-                    >
-                      <option value="">-- Select alternate person --</option>
-                      {departmentStaff.map(s => (
-                        <option key={s.id} value={s.name}>
-                          {s.name} {s.designation ? `(${s.designation})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">Additional Alternate (All Staff)</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <select
-                      className="block w-full py-3 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={form.additional_alternate}
-                      onChange={e=>setForm({...form, additional_alternate:e.target.value})}
-                    >
-                      <option value="">-- Select additional alternate --</option>
-                      {staff.map(s => (
-                        <option key={s.id} value={s.name}>
-                          {s.name} {s.designation ? `(${s.designation})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <input 
-                    id="available_on_phone"
-                    type="checkbox" 
-                    checked={form.available_on_phone} 
-                    onChange={e=>setForm({...form, available_on_phone:e.target.checked})} 
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor="available_on_phone" className="ml-3 text-sm font-medium text-gray-700">
-                    I will be available on phone during this period
-                  </label>
-                </div>
-                <div className="flex justify-between pt-4">
-                  <div>
-                    {editingLeave && editingLeave.status === 'Pending' && (
-                      <button 
-                        type="button" 
-                        onClick={deleteLeave} 
-                        className="inline-flex justify-center px-6 py-3 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        Delete Leave
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex space-x-4">
-                    <button type="button" onClick={closeModal} className="inline-flex justify-center px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Cancel</button>
-                    {(!editingLeave || editingLeave.status === 'Pending') && (
-                      <button type="submit" className="inline-flex justify-center px-6 py-3 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        {editingLeave ? 'Update Leave' : 'Apply for Leave'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
+            // DUPLICATE_LEAVE_CALENDAR_DISABLED: 2025-11-15 — Disabled duplicate leave management (Calendar variant)
+            // This view is deprecated and intentionally disabled to remove the duplicate flow.
+            export default function CalendarPage() {
+              return null
+            }
+            */
 
-    {/* Task Details Modal */}
-    {isTaskModalOpen && selectedTask && (
-      <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-        <div className="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-          <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setIsTaskModalOpen(false)} />
-          <div className="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-            <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium leading-6 text-white">
-                  Task Details
-                </h3>
-                <button className="text-white hover:text-gray-200" onClick={() => setIsTaskModalOpen(false)}>
-                  <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-            </div>
-            <div className="px-6 py-5 bg-white">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-xl font-semibold text-gray-900 mb-2">{selectedTask.title}</h4>
-                  {selectedTask.description && (
-                    <p className="text-gray-600">{selectedTask.description}</p>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                      selectedTask.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      selectedTask.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {selectedTask.status}
-                    </span>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                      selectedTask.priority === 'High' ? 'bg-red-100 text-red-800' :
-                      selectedTask.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {selectedTask.priority}
-                    </span>
-                  </div>
-                  
-                  {selectedTask.due_date && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                      <div className="flex items-center text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {selectedTask.due_date}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedTask.Assignee && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-                      <div className="flex items-center text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        {selectedTask.Assignee.name}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedTask.Assigner && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned By</label>
-                      <div className="flex items-center text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        {selectedTask.Assigner.name}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex justify-end pt-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsTaskModalOpen(false)} 
-                    className="inline-flex justify-center px-6 py-3 text-sm font-medium text-white border border-transparent rounded-lg shadow-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
-  )
-}
+            /*
+            Original implementation was here and has been commented out to prevent the
+            duplicate Calendar-based leave application flow. See LeaveDuplicate.md for
+            the detailed diff and reasoning.
+            */
+                  {editingLeave ? 'View / Update Leave' : 'Apply for Leave'}
