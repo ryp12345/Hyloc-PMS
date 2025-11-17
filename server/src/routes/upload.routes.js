@@ -19,11 +19,34 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Get staff info from request body
-    const { staffId, staffName } = req.body;
+    const { staffId, firstName, middleName, lastName, oldImage } = req.body;
     const ext = path.extname(file.originalname);
-    // Create filename: staffId_staffName_timestamp.ext
-    const sanitizedName = staffName ? staffName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') : 'staff';
-    const filename = `${staffId || 'unknown'}_${sanitizedName}_${Date.now()}${ext}`;
+    
+    // Log received data for debugging
+    console.log('Received upload data:', { staffId, firstName, middleName, lastName, oldImage });
+    
+    // Delete old image if exists
+    if (oldImage) {
+      const oldImagePath = path.join(uploadDir, path.basename(oldImage));
+      if (fs.existsSync(oldImagePath)) {
+        try {
+          fs.unlinkSync(oldImagePath);
+        } catch (err) {
+          console.error('Error deleting old image:', err);
+        }
+      }
+    }
+    
+    // Create filename: firstName_middleName_lastName_timestamp.ext
+    const nameParts = [
+      firstName ? firstName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') : '',
+      middleName ? middleName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') : '',
+      lastName ? lastName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') : ''
+    ].filter(Boolean);
+    const sanitizedName = nameParts.length > 0 ? nameParts.join('_') : 'staff';
+    const timestamp = Date.now();
+    const filename = `${sanitizedName}_${timestamp}${ext}`;
+    console.log('Generated filename:', filename);
     cb(null, filename);
   }
 });

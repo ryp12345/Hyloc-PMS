@@ -204,7 +204,7 @@ export default function StaffPage() {
     }
   }
 
-  const uploadImage = async (staffId, staffName) => {
+  const uploadImage = async (staffId) => {
     if (!imageFile) return form.staff.staff_img
     
     setUploadingImage(true)
@@ -212,8 +212,21 @@ export default function StaffPage() {
       const formData = new FormData()
       formData.append('staffImage', imageFile)
       formData.append('staffId', staffId || form.staff.emp_id)
-      const fullName = staffName || [form.staff.first_name, form.staff.middle_name, form.staff.last_name].filter(Boolean).join(' ')
-      formData.append('staffName', fullName)
+      formData.append('firstName', form.staff.first_name || '')
+      formData.append('middleName', form.staff.middle_name || '')
+      formData.append('lastName', form.staff.last_name || '')
+      // Send old image path for deletion
+      if (form.staff.staff_img) {
+        formData.append('oldImage', form.staff.staff_img)
+      }
+      
+      // Debug log
+      console.log('Uploading with data:', {
+        firstName: form.staff.first_name,
+        middleName: form.staff.middle_name,
+        lastName: form.staff.last_name,
+        staffId: staffId || form.staff.emp_id
+      })
       
       const token = localStorage.getItem('accessToken') || JSON.parse(localStorage.getItem('auth') || '{}').accessToken
       // Use the base URL without /api suffix for the upload
@@ -249,14 +262,16 @@ export default function StaffPage() {
       
       // Upload image if selected
       if (imageFile) {
-        const fullName = [form.staff.first_name, form.staff.middle_name, form.staff.last_name].filter(Boolean).join(' ')
-        const imagePath = await uploadImage(payload.staff.emp_id, fullName)
+        const imagePath = await uploadImage(payload.staff.emp_id)
         payload.staff.staff_img = imagePath
       }
       
-      // Remove deprecated fields that no longer exist in the database
-      // The backend expects only the IDs, not the string names
+      // Clean up date fields - set empty strings to null
       if (payload.staff) {
+        if (payload.staff.date_of_birth === '') payload.staff.date_of_birth = null
+        if (payload.staff.date_of_joining === '') payload.staff.date_of_joining = null
+        
+        // Remove deprecated fields that no longer exist in the database
         delete payload.staff.department
         delete payload.staff.designation
       }
