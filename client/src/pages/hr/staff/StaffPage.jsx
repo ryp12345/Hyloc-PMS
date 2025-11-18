@@ -4,8 +4,7 @@ import { api } from '../../../lib/api'
 import { getDepartments } from '../../../api/departmentApi'
 import { getDesignations } from '../../../api/designationApi'
 import { getAssociations } from '../../../api/associationApi'
-
-const ROLE_OPTIONS = ['Management','Manager','HR','Employee']
+import { getRoles } from '../../../api/roleApi'
 
 const BLOOD_GROUP_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 
@@ -31,13 +30,14 @@ export default function StaffPage() {
   const [departments, setDepartments] = useState([])
   const [designations, setDesignations] = useState([])
   const [associations, setAssociations] = useState([])
+  const [roles, setRoles] = useState([])
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false)
   const [bulkFile, setBulkFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [bulkResults, setBulkResults] = useState(null)
   const [form, setForm] = useState({
     email: '',
-    roleName: 'Employee',
+    roleName: '',
     staff: { 
       first_name: '',
       middle_name: '',
@@ -87,12 +87,13 @@ export default function StaffPage() {
   }
   useEffect(() => {
     load()
-    // Fetch departments, designations and associations for dropdowns
-    Promise.allSettled([getDepartments(), getDesignations(), getAssociations()])
-      .then(([deptRes, desigRes, assoRes]) => {
+    // Fetch departments, designations, associations and roles for dropdowns
+    Promise.allSettled([getDepartments(), getDesignations(), getAssociations(), getRoles()])
+      .then(([deptRes, desigRes, assoRes, roleRes]) => {
         if (deptRes.status === 'fulfilled') setDepartments(deptRes.value.data || [])
         if (desigRes.status === 'fulfilled') setDesignations(desigRes.value.data || [])
         if (assoRes.status === 'fulfilled') setAssociations(assoRes.value.data || [])
+        if (roleRes.status === 'fulfilled') setRoles(roleRes.value.data || [])
       })
       .catch(() => {})
   }, [])
@@ -104,7 +105,7 @@ export default function StaffPage() {
     setImagePreview(null)
     setForm({ 
       email: '', 
-      roleName: 'Employee', 
+      roleName: '', 
       staff: { 
         first_name: '',
         middle_name: '',
@@ -150,7 +151,7 @@ export default function StaffPage() {
     
     setForm({
       email: row.email || '',
-      roleName: row.role || 'Employee',
+      roleName: row.role || '',
       staff: {
         first_name: row.staff?.first_name || '',
         middle_name: row.staff?.middle_name || '',
@@ -562,7 +563,8 @@ export default function StaffPage() {
                       <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">Role</label>
                         <select value={form.roleName} onChange={e=>setForm({ ...form, roleName: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                          {ROLE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                          <option value="">Select Role</option>
+                          {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                         </select>
                       </div>
                     </div>

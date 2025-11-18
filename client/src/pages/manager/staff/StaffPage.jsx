@@ -47,7 +47,7 @@ export default function StaffPage() {
     const q = search.toLowerCase()
     return sorted.filter(r => {
       // Search filter
-      const matchesSearch = (u.fullName || [u.staff?.first_name, u.staff?.middle_name, u.staff?.last_name].filter(Boolean).join(' '))?.toLowerCase().includes(q) ||
+      const matchesSearch = (r.fullName || [r.staff?.first_name, r.staff?.middle_name, r.staff?.last_name].filter(Boolean).join(' '))?.toLowerCase().includes(q) ||
         r.email?.toLowerCase().includes(q) ||
         r.role?.toLowerCase().includes(q) ||
         r.staff?.department?.toLowerCase().includes(q) ||

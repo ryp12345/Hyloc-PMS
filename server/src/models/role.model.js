@@ -9,9 +9,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50),
       allowNull: false,
       unique: true,
-      validate: {
-        isIn: [['Management', 'Manager', 'Employee', 'HR']],
-      },
     },
   }, {
     tableName: 'roles',

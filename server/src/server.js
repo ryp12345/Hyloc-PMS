@@ -21,6 +21,7 @@ const associationRoutes = require('./routes/association.routes');
 const qualificationRoutes = require('./routes/qualification.routes');
 const goalRoutes = require('./routes/goal.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const roleRoutes = require('./routes/role.routes');
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/associations', associationRoutes);
 app.use('/api/qualifications', qualificationRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/roles', roleRoutes);
 
 const PORT = process.env.PORT || 3001;
 

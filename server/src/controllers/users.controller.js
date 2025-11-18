@@ -33,7 +33,7 @@ const splitName = (fullName) => {
 };
 
 exports.list = async (req, res) => {
-  if (!['Management', 'HR'].includes(req.user.role)) {
+  if (!['Management', 'HR', 'Manager'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Forbidden' });
   }
   const users = await User.findAll({ 
