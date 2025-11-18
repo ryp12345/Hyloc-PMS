@@ -1,4 +1,4 @@
-const { Leave, User, LeaveEntitlement, Staff, Role, sequelize } = require('../models');
+const { Leave, User, LeaveEntitlement, Staff, Role, Department, sequelize } = require('../models');
 
 exports.apply = async (req, res) => {
   try {
@@ -99,7 +99,8 @@ exports.pendingLeaves = async (req, res) => {
         {
           model: Staff,
           include: [{
-            association: 'Departments',
+            model: Department,
+            as: 'Departments',
             attributes: ['id', 'dept_name'],
             through: { attributes: [] }
           }]
@@ -127,12 +128,13 @@ exports.pendingLeaves = async (req, res) => {
       include: [
         { 
           model: User,
-          attributes: ['id', 'name', 'email', 'role_id'],
+          attributes: ['id', 'email', 'role_id'],
           include: [{
             model: Staff,
-            attributes: ['emp_id', 'phone_no'],
+            attributes: ['emp_id', 'phone_no', 'first_name', 'middle_name', 'last_name'],
             include: [{
-              association: 'Departments',
+              model: Department,
+              as: 'Departments',
               attributes: ['id', 'dept_name'],
               through: { attributes: [] }
             }]
@@ -150,9 +152,12 @@ exports.pendingLeaves = async (req, res) => {
     for (const leave of allPendingLeaves) {
       const applicant = leave.User;
       const applicantDeptId = applicant?.Staff?.Departments?.[0]?.id;
+      const applicantName = applicant?.Staff ? 
+        [applicant.Staff.first_name, applicant.Staff.middle_name, applicant.Staff.last_name]
+          .filter(Boolean).join(' ') : 'Unknown';
       
       console.log(`\nLeave ID ${leave.id}:`);
-      console.log('  Applicant:', applicant?.name);
+      console.log('  Applicant:', applicantName);
       console.log('  Applicant Role ID:', applicant?.role_id);
       console.log('  Applicant Dept ID:', applicantDeptId);
       console.log('  Credited Days:', leave.credited_days, 'Type:', typeof leave.credited_days);
@@ -208,7 +213,14 @@ exports.pendingLeaves = async (req, res) => {
 exports.allLeaves = async (req, res) => {
   if (!['Manager','Management','HR'].includes(req.user.role)) return res.status(403).json({ message: 'Forbidden' });
   const rows = await Leave.findAll({ 
-    include: [{ model: User, attributes: ['name', 'email'] }],
+    include: [{ 
+      model: User, 
+      attributes: ['email'],
+      include: [{
+        model: Staff,
+        attributes: ['first_name', 'middle_name', 'last_name', 'emp_id']
+      }]
+    }],
     order: [['created_at', 'DESC']] 
   });
   res.json(rows);
@@ -223,7 +235,11 @@ exports.approve = async (req, res) => {
         attributes: ['role_id'],
         include: [{
           model: Staff,
-          include: ['Departments']
+          include: [{
+            model: Department,
+            as: 'Departments',
+            through: { attributes: [] }
+          }]
         }]
       }]
     });
@@ -254,7 +270,11 @@ exports.reject = async (req, res) => {
         attributes: ['role_id'],
         include: [{
           model: Staff,
-          include: ['Departments']
+          include: [{
+            model: Department,
+            as: 'Departments',
+            through: { attributes: [] }
+          }]
         }]
       }]
     });

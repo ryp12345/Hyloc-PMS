@@ -12,6 +12,13 @@ export default function LeaveApprovalPage() {
     fetchPendingLeaves()
   }, [])
 
+  // Helper function to get full name from staff
+  const getFullName = (user) => {
+    if (!user?.Staff) return 'Unknown'
+    const { first_name, middle_name, last_name } = user.Staff
+    return [first_name, middle_name, last_name].filter(Boolean).join(' ') || 'Unknown'
+  }
+
   const fetchPendingLeaves = async () => {
     try {
       setLoading(true)
@@ -126,7 +133,7 @@ export default function LeaveApprovalPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                             <h3 className="text-lg font-semibold text-gray-900">
-                              {leave.User?.name || 'Unknown'}
+                              {getFullName(leave.User)}
                             </h3>
                             {/* Role Badge */}
                             <span className={`ml-2 px-2 py-0.5 text-xs font-semibold rounded ${

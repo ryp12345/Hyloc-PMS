@@ -8,6 +8,13 @@ export default function StaffViewPage() {
   const [staff, setStaff] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('basic')
+  
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http')) return imagePath
+    return API_BASE.replace('/api', '') + imagePath
+  }
 
   useEffect(() => {
     loadStaff()
@@ -56,10 +63,10 @@ export default function StaffViewPage() {
   }
 
   return (
-    <div className="min-h-screen px-4 py-12 bg-gradient-to-br from-gray-50 to-gray-100 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 py-8 bg-gradient-to-br from-gray-50 to-gray-100 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <button
             onClick={() => navigate('/staff')}
             className="flex items-center text-indigo-600 hover:text-indigo-800 mb-4 transition-colors"
@@ -71,74 +78,111 @@ export default function StaffViewPage() {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6 bg-white rounded-lg shadow-md overflow-hidden">
-          <nav className="flex border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('basic')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'basic'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Basic Information
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('department')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'department'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Department
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('designation')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'designation'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Designation
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('association')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'association'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Association
-              </div>
-            </button>
-          </nav>
-        </div>
+        {/* Main Layout: Left Sidebar + Right Content */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* Left Sidebar */}
+          <div className="lg:w-80 flex-shrink-0">
+            {/* Staff Image Box */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-4">
+              <div className="flex flex-col items-center">
+                {/* Staff Image */}
+                <div className="mb-4">
+                  {staff.staff?.staff_img ? (
+                    <img
+                      src={getImageUrl(staff.staff.staff_img)}
+                      alt={staff.fullName || 'Staff'}
+                      className="w-32 h-32 rounded-full object-cover border-4 border-indigo-100 shadow-lg"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center border-4 border-indigo-100 shadow-lg"
+                    style={{ display: staff.staff?.staff_img ? 'none' : 'flex' }}
+                  >
+                    <span className="text-4xl font-bold text-white">
+                      {(staff.staff?.first_name?.[0] || staff.fullName?.[0] || '?').toUpperCase()}
+                    </span>
+                  </div>
+                </div>
 
-        {/* Tab Content */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+                {/* Staff Name and Role */}
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-gray-800 mb-1">
+                    {[staff.staff?.first_name, staff.staff?.middle_name, staff.staff?.last_name].filter(Boolean).join(' ') || staff.fullName || 'Unknown'}
+                  </h2>
+                  <p className="text-xs text-gray-500 mb-2">{staff.staff?.emp_id || 'No ID'}</p>
+                  <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                    {staff.role}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Vertical Tabs */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <nav className="flex flex-col">
+                <button
+                  onClick={() => setActiveTab('basic')}
+                  className={`flex items-center px-6 py-4 text-sm font-medium transition-colors border-l-4 ${
+                    activeTab === 'basic'
+                      ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
+                      : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Basic Information</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('department')}
+                  className={`flex items-center px-6 py-4 text-sm font-medium transition-colors border-l-4 ${
+                    activeTab === 'department'
+                      ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
+                      : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span>Department</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('designation')}
+                  className={`flex items-center px-6 py-4 text-sm font-medium transition-colors border-l-4 ${
+                    activeTab === 'designation'
+                      ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
+                      : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Designation</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('association')}
+                  className={`flex items-center px-6 py-4 text-sm font-medium transition-colors border-l-4 ${
+                    activeTab === 'association'
+                      ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
+                      : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span>Association</span>
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          {/* Right Content Area */}
+          <div className="flex-1 bg-white rounded-lg shadow-md p-6">
           {/* Basic Information Tab */}
           {activeTab === 'basic' && (
             <div className="space-y-6">
@@ -244,17 +288,17 @@ export default function StaffViewPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-6 bg-indigo-50 rounded-lg border border-indigo-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Department Name</label>
-                    <p className="text-lg font-semibold text-indigo-600">{staff.staff?.Department?.dept_name || staff.staff?.department || '-'}</p>
+                    <p className="text-lg font-semibold text-indigo-600">{staff.staff?.Departments?.[0]?.dept_name || staff.staff?.department || '-'}</p>
                   </div>
                   {/* <div className="p-6 bg-blue-50 rounded-lg border border-blue-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Department ID</label>
-                    <p className="text-lg font-semibold text-blue-600">{staff.staff?.department_id || staff.staff?.Department?.id || '-'}</p>
+                    <p className="text-lg font-semibold text-blue-600">{staff.staff?.department_id || staff.staff?.Departments?.[0]?.id || '-'}</p>
                   </div> */}
                 </div>
-                {staff.staff?.Department?.description && (
+                {staff.staff?.Departments?.[0]?.description && (
                   <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Department Description</label>
-                    <p className="text-sm text-gray-700">{staff.staff.Department.description}</p>
+                    <p className="text-sm text-gray-700">{staff.staff.Departments[0].description}</p>
                   </div>
                 )}
               </div>
@@ -274,17 +318,17 @@ export default function StaffViewPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-6 bg-purple-50 rounded-lg border border-purple-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Designation Name</label>
-                    <p className="text-lg font-semibold text-purple-600">{staff.staff?.Designation?.name || staff.staff?.designation || '-'}</p>
+                    <p className="text-lg font-semibold text-purple-600">{staff.staff?.Designations?.[0]?.name || staff.staff?.designation || '-'}</p>
                   </div>
                   {/* <div className="p-6 bg-pink-50 rounded-lg border border-pink-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Designation ID</label>
-                    <p className="text-lg font-semibold text-pink-600">{staff.staff?.designation_id || staff.staff?.Designation?.id || '-'}</p>
+                    <p className="text-lg font-semibold text-pink-600">{staff.staff?.designation_id || staff.staff?.Designations?.[0]?.id || '-'}</p>
                   </div> */}
                 </div>
-                {staff.staff?.Designation?.description && (
+                {staff.staff?.Designations?.[0]?.description && (
                   <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
                     <label className="block text-xs font-medium text-gray-500 mb-2">Designation Description</label>
-                    <p className="text-sm text-gray-700">{staff.staff.Designation.description}</p>
+                    <p className="text-sm text-gray-700">{staff.staff.Designations[0].description}</p>
                   </div>
                 )}
               </div>
@@ -300,22 +344,22 @@ export default function StaffViewPage() {
                 </svg>
                 Association Information
               </h4>
-              {staff.staff?.Association || staff.staff?.association_id ? (
+              {staff.staff?.Associations && staff.staff.Associations.length > 0 ? (
                 <div className="space-y-6 mt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-6 bg-green-50 rounded-lg border border-green-200">
                       <label className="block text-xs font-medium text-gray-500 mb-2">Association Name</label>
-                      <p className="text-lg font-semibold text-green-600">{staff.staff?.Association?.asso_name || '-'}</p>
+                      <p className="text-lg font-semibold text-green-600">{staff.staff?.Associations?.[0]?.asso_name || '-'}</p>
                     </div>
                     {/* <div className="p-6 bg-emerald-50 rounded-lg border border-emerald-200">
                       <label className="block text-xs font-medium text-gray-500 mb-2">Association ID</label>
-                      <p className="text-lg font-semibold text-emerald-600">{staff.staff?.association_id || staff.staff?.Association?.id || '-'}</p>
+                      <p className="text-lg font-semibold text-emerald-600">{staff.staff?.association_id || staff.staff?.Associations?.[0]?.id || '-'}</p>
                     </div> */}
                   </div>
-                  {staff.staff?.Association?.description && (
+                  {staff.staff?.Associations?.[0]?.description && (
                     <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
                       <label className="block text-xs font-medium text-gray-500 mb-2">Association Description</label>
-                      <p className="text-sm text-gray-700">{staff.staff.Association.description}</p>
+                      <p className="text-sm text-gray-700">{staff.staff.Associations[0].description}</p>
                     </div>
                   )}
                 </div>
@@ -329,6 +373,7 @@ export default function StaffViewPage() {
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
