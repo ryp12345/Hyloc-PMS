@@ -38,7 +38,7 @@ exports.list = async (req, res) => {
   }
   const users = await User.findAll({ 
     include: [
-      Role, 
+      { model: Role, through: { attributes: ['status', 'created_at'] } }, 
       { 
         model: Staff, 
         include: [
@@ -53,7 +53,7 @@ exports.list = async (req, res) => {
   res.json(users.map(u => ({ 
     id: u.id, 
     email: u.email, 
-    role: u.Role?.name, 
+    role: (u.Roles || []).find(r => r.UserRole?.status === 'Active')?.name || null, 
     staff: u.Staff,
     fullName: buildFullName(u.Staff)
   })));
@@ -62,7 +62,7 @@ exports.list = async (req, res) => {
 exports.get = async (req, res) => {
   const user = await User.findByPk(req.params.id, { 
     include: [
-      Role, 
+      { model: Role, through: { attributes: ['status', 'created_at'] } }, 
       { 
         model: Staff, 
         include: [
@@ -74,13 +74,13 @@ exports.get = async (req, res) => {
     ] 
   });
   if (!user) return res.status(404).json({ message: 'Not found' });
-  if (req.user.id !== user.id && !['Management','HR'].includes(req.user.role)) {
+  if (req.user.id !== user.id && !['Management','HR','Manager'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Forbidden' });
   }
   res.json({ 
     id: user.id, 
     email: user.email, 
-    role: user.Role?.name, 
+    role: (user.Roles || []).find(r => r.UserRole?.status === 'Active')?.name || null, 
     staff: user.Staff,
     fullName: buildFullName(user.Staff)
   });
@@ -96,7 +96,9 @@ exports.create = async (req, res) => {
     const role = await Role.findOne({ where: { name: roleName } });
     if (!role) return res.status(400).json({ message: 'Invalid role' });
     const hashed = await bcrypt.hash(password || 'password123', 10);
-    const user = await User.create({ email, password: hashed, role_id: role.id });
+    const user = await User.create({ email, password: hashed });
+    const { UserRole } = require('../models');
+    await UserRole.create({ user_id: user.id, role_id: role.id, status: 'Active' });
     
     if (staff) {
       // Normalize payload and capture M2M ids
@@ -170,7 +172,7 @@ exports.create = async (req, res) => {
     
     const full = await User.findByPk(user.id, { 
       include: [
-        Role, 
+        { model: Role, through: { attributes: ['status', 'created_at'] } }, 
         { 
           model: Staff, 
           include: [
@@ -184,7 +186,7 @@ exports.create = async (req, res) => {
     res.status(201).json({ 
       id: full.id, 
       email: full.email, 
-      role: full.Role.name, 
+      role: (full.Roles || []).find(r => r.UserRole?.status === 'Active')?.name || null, 
       staff: full.Staff,
       fullName: buildFullName(full.Staff)
     });
@@ -196,7 +198,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id, { include: [Role, Staff] });
+    const user = await User.findByPk(req.params.id, { include: [{ model: Role, through: { attributes: ['status'] } }, Staff] });
     if (!user) return res.status(404).json({ message: 'Not found' });
     const canManage = ['Management', 'HR'].includes(req.user.role);
     if (req.user.id !== user.id && !canManage) return res.status(403).json({ message: 'Forbidden' });
@@ -205,27 +207,29 @@ exports.update = async (req, res) => {
     if (password) user.password = await bcrypt.hash(password, 10);
     if (roleName && canManage) {
       const role = await Role.findOne({ where: { name: roleName } });
-      if (role) user.role_id = role.id;
+      if (role) {
+        const { UserRole } = require('../models');
+        // No longer set previous active roles to Inactive - allow multiple active roles
+        await UserRole.create({ user_id: user.id, role_id: role.id, status: 'Active' });
+      }
     }
     await user.save();
     
     if (staff) {
       const payload = { ...staff };
-      
-      // Extract M2M ids
-      let designationIds = [];
-      if (Array.isArray(payload.designation_ids)) designationIds = payload.designation_ids;
-      else if (payload.designation_id) designationIds = [payload.designation_id];
-      
-      let associationIds = [];
-      if (Array.isArray(payload.association_ids)) associationIds = payload.association_ids;
-      else if (payload.association_id) associationIds = [payload.association_id];
-      
-      let departmentIds = [];
-      if (Array.isArray(payload.department_ids)) departmentIds = payload.department_ids;
-      else if (payload.department_id) departmentIds = [payload.department_id];
-      
-      // Clean up payload - only keep staff model fields
+
+      // Extract M2M ids safely (support single or array)
+      const designationIds = Array.isArray(payload.designation_ids)
+        ? payload.designation_ids
+        : payload.designation_id ? [payload.designation_id] : [];
+      const associationIds = Array.isArray(payload.association_ids)
+        ? payload.association_ids
+        : payload.association_id ? [payload.association_id] : [];
+      const departmentIds = Array.isArray(payload.department_ids)
+        ? payload.department_ids
+        : payload.department_id ? [payload.department_id] : [];
+
+      // Only map allowed fields (ignore any user_id passed from client)
       const cleanPayload = {
         first_name: payload.first_name,
         middle_name: payload.middle_name,
@@ -247,44 +251,40 @@ exports.update = async (req, res) => {
         gender: payload.gender,
         address: payload.address
       };
-      
-      let staffInstance = user.Staff;
+
+      // Ensure we never create a duplicate staff row for the same user
+      let staffInstance = await Staff.findOne({ where: { user_id: user.id } });
       if (staffInstance) {
         await staffInstance.update(cleanPayload);
       } else {
         staffInstance = await user.createStaff(cleanPayload);
       }
-      
-      // Update pivot rows with start_date
+
       const startDate = payload.date_of_joining || new Date().toISOString().split('T')[0];
-      
-      if (staffInstance) {
-        if (departmentIds.length) {
-          await staffInstance.setDepartments(
-            departmentIds.map(id => Number(id)),
-            { through: { start_date: startDate, end_date: null } }
-          );
-        }
-        
-        if (designationIds.length) {
-          await staffInstance.setDesignations(
-            designationIds.map(id => Number(id)),
-            { through: { start_date: startDate, end_date: null } }
-          );
-        }
-        
-        if (associationIds.length) {
-          await staffInstance.setAssociations(
-            associationIds.map(id => Number(id)),
-            { through: { start_date: startDate, end_date: null } }
-          );
-        }
+
+      if (departmentIds.length) {
+        await staffInstance.setDepartments(
+          departmentIds.map(id => Number(id)),
+          { through: { start_date: startDate, end_date: null } }
+        );
+      }
+      if (designationIds.length) {
+        await staffInstance.setDesignations(
+          designationIds.map(id => Number(id)),
+          { through: { start_date: startDate, end_date: null } }
+        );
+      }
+      if (associationIds.length) {
+        await staffInstance.setAssociations(
+          associationIds.map(id => Number(id)),
+          { through: { start_date: startDate, end_date: null } }
+        );
       }
     }
     
     const full = await User.findByPk(user.id, { 
       include: [
-        Role, 
+        { model: Role, through: { attributes: ['status', 'created_at'] } }, 
         { 
           model: Staff, 
           include: [
@@ -298,12 +298,25 @@ exports.update = async (req, res) => {
     res.json({ 
       id: full.id, 
       email: full.email, 
-      role: full.Role?.name, 
+      role: (full.Roles || []).find(r => r.UserRole?.status === 'Active')?.name || null, 
       staff: full.Staff,
       fullName: buildFullName(full.Staff)
     });
   } catch (error) {
     console.error('Error updating user/staff:', error);
+    // Provide clearer validation / uniqueness feedback
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const field = (error.errors && error.errors[0] && error.errors[0].path) || 'field';
+      // Provide friendlier staff message
+      if (field === 'user_id') {
+        return res.status(400).json({ message: 'Staff record already exists for this user' });
+      }
+      return res.status(400).json({ message: `${field === 'email' ? 'Email' : field} already exists` });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      const messages = (error.errors || []).map(e => e.message).filter(Boolean);
+      return res.status(400).json({ message: messages.join('; ') || 'Validation failed' });
+    }
     res.status(500).json({ message: error.message || 'Failed to update user' });
   }
 };
@@ -415,7 +428,7 @@ exports.getUserLeaveHistory = async (req, res) => {
 // Get staff names for dropdown (accessible to all authenticated users)
 exports.getStaffNames = async (req, res) => {
   const users = await User.findAll({ 
-    include: [Role, Staff], 
+    include: [{ model: Role, through: { attributes: ['status'] } }, Staff], 
     attributes: ['id', 'email'] 
   });
   // Include all users (including the logged-in user)
@@ -423,7 +436,7 @@ exports.getStaffNames = async (req, res) => {
     id: u.id, 
     email: u.email,
     fullName: buildFullName(u.Staff),
-    role: u.Role?.name || null,
+    role: (u.Roles || []).find(r => r.UserRole?.status === 'Active')?.name || null,
     designation: u.Staff?.designation || null 
   })));
 };
@@ -434,7 +447,7 @@ exports.getStaffByDepartment = async (req, res) => {
   if (!department_id) return res.status(400).json({ message: 'department_id is required' });
   const users = await User.findAll({
     include: [
-      Role,
+      { model: Role, through: { attributes: ['status'] } },
       {
         model: Staff,
         required: true,
@@ -459,6 +472,133 @@ exports.getStaffByDepartment = async (req, res) => {
   })));
 };
 
+// Assign a role to a user (HR/Management only)
+exports.assignRole = async (req, res) => {
+  try {
+    if (!['Management', 'HR'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const userId = req.params.id;
+    const { roleName, status = 'Active' } = req.body;
+    if (!roleName) return res.status(400).json({ message: 'roleName is required' });
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const role = await Role.findOne({ where: { name: roleName } });
+    if (!role) return res.status(400).json({ message: 'Invalid role' });
+
+    const { UserRole } = require('../models');
+    // No longer force other roles to Inactive - allow multiple active roles
+    const row = await UserRole.create({ user_id: userId, role_id: role.id, status });
+    res.status(201).json({ message: 'Role assigned', id: row.id });
+  } catch (error) {
+    console.error('Assign role error:', error);
+    res.status(500).json({ message: error.message || 'Failed to assign role' });
+  }
+};
+
+// Get roles history for a user (HR/Management only)
+exports.getUserRoles = async (req, res) => {
+  try {
+    if (!['Management', 'HR'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const userId = req.params.id;
+    const { UserRole } = require('../models');
+    const rows = await UserRole.findAll({
+      where: { user_id: userId },
+      include: [Role],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(rows.map(r => ({ id: r.id, role: r.Role?.name, status: r.status, created_at: r.created_at })));
+  } catch (error) {
+    console.error('Get user roles error:', error);
+    res.status(500).json({ message: error.message || 'Failed to fetch roles' });
+  }
+};
+
+// List ALL role assignments (HR/Management only)
+exports.listAssignments = async (req, res) => {
+  try {
+    if (!['Management', 'HR'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const { UserRole } = require('../models');
+    const rows = await UserRole.findAll({
+      include: [
+        { model: User, attributes: ['id', 'email'] },
+        { model: Role, attributes: ['id', 'name'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(rows.map(r => ({
+      id: r.id,
+      user_id: r.user_id,
+      user_email: r.User?.email || null,
+      role_id: r.role_id,
+      role_name: r.Role?.name || null,
+      status: r.status,
+      created_at: r.created_at
+    })));
+  } catch (error) {
+    console.error('List assignments error:', error);
+    res.status(500).json({ message: error.message || 'Failed to list assignments' });
+  }
+};
+
+// Update a role assignment (HR/Management only)
+exports.updateAssignment = async (req, res) => {
+  try {
+    if (!['Management', 'HR'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const userId = req.params.id;
+    const { assignmentId } = req.params;
+    const { roleName, status } = req.body;
+    const { UserRole } = require('../models');
+
+    const row = await UserRole.findByPk(assignmentId, { include: [Role] });
+    if (!row) return res.status(404).json({ message: 'Assignment not found' });
+    if (row.user_id !== userId) return res.status(400).json({ message: 'User mismatch' });
+
+    const updates = {};
+    if (roleName) {
+      const role = await Role.findOne({ where: { name: roleName } });
+      if (!role) return res.status(400).json({ message: 'Invalid role' });
+      updates.role_id = role.id;
+    }
+    if (status) updates.status = status;
+
+    // No longer force other roles to Inactive when setting one to Active
+    // Allow multiple active roles simultaneously
+
+    await row.update(updates);
+    res.json({ message: 'Updated' });
+  } catch (error) {
+    console.error('Update assignment error:', error);
+    res.status(500).json({ message: error.message || 'Failed to update assignment' });
+  }
+};
+
+// Delete a role assignment (HR/Management only)
+exports.deleteAssignment = async (req, res) => {
+  try {
+    if (!['Management', 'HR'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const userId = req.params.id;
+    const { assignmentId } = req.params;
+    const { UserRole } = require('../models');
+    const row = await UserRole.findByPk(assignmentId);
+    if (!row) return res.status(404).json({ message: 'Assignment not found' });
+    if (row.user_id !== userId) return res.status(400).json({ message: 'User mismatch' });
+    await row.destroy();
+    res.json({ message: 'Deleted' });
+  } catch (error) {
+    console.error('Delete assignment error:', error);
+    res.status(500).json({ message: error.message || 'Failed to delete assignment' });
+  }
+};
+
 // Bulk create staff from Excel upload
 exports.bulkCreate = async (req, res) => {
   if (!['Management', 'HR'].includes(req.user.role)) {
@@ -474,7 +614,7 @@ exports.bulkCreate = async (req, res) => {
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const data = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
     if (!data || data.length === 0) {
       return res.status(400).json({ message: 'Excel file is empty' });
@@ -513,6 +653,31 @@ exports.bulkCreate = async (req, res) => {
       return res.status(500).json({ message: 'Employee role not found in database' });
     }
 
+    // Helpers
+    const toTrimmedString = (v) => (v === null || v === undefined) ? '' : String(v).trim();
+    const normalizeDate = (v) => {
+      if (v === null || v === undefined || v === '') return null;
+      if (v instanceof Date && !isNaN(v)) {
+        return v.toISOString().slice(0, 10);
+      }
+      if (typeof v === 'number') {
+        try {
+          const parsed = XLSX.SSF.parse_date_code(v);
+          if (parsed && parsed.y && parsed.m && parsed.d) {
+            const mm = String(parsed.m).padStart(2, '0');
+            const dd = String(parsed.d).padStart(2, '0');
+            return `${parsed.y}-${mm}-${dd}`;
+          }
+        } catch (_) {}
+      }
+      const s = String(v).trim();
+      // Accept formats like YYYY-MM-DD or DD/MM/YYYY etc.
+      // Try Date parse as last resort
+      const d = new Date(s);
+      if (!isNaN(d)) return d.toISOString().slice(0, 10);
+      return null;
+    };
+
     // Process each row
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
@@ -520,7 +685,13 @@ exports.bulkCreate = async (req, res) => {
 
       try {
         // Required fields validation
-        if (!row.FirstName || !row.Email || !row.EmployeeID) {
+        const FirstName = toTrimmedString(row.FirstName);
+        const MiddleName = toTrimmedString(row.MiddleName);
+        const LastName = toTrimmedString(row.LastName);
+        const Email = toTrimmedString(row.Email).toLowerCase();
+        const EmployeeID = toTrimmedString(row.EmployeeID);
+
+        if (!FirstName || !Email || !EmployeeID) {
           results.errors.push({
             row: rowNum,
             data: row,
@@ -530,16 +701,16 @@ exports.bulkCreate = async (req, res) => {
         }
 
         // Validate field lengths before creating staff
-        const empId = row.EmployeeID ? String(row.EmployeeID).trim() : null;
-        const firstName = row.FirstName ? String(row.FirstName).trim() : null;
-        const middleName = row.MiddleName ? String(row.MiddleName).trim() : '';
-        const lastName = row.LastName ? String(row.LastName).trim() : '';
+        const empId = EmployeeID || null;
+        const firstName = FirstName || null;
+        const middleName = MiddleName || '';
+        const lastName = LastName || '';
         const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
-        const bloodGroup = row.BloodGroup ? String(row.BloodGroup).trim() : null;
-        const panNo = row.PANNumber ? String(row.PANNumber).trim() : null;
-        const aadharNo = row.AadharNumber ? String(row.AadharNumber).trim() : null;
-        const religion = row.Religion ? String(row.Religion).trim() : null;
-        const emergencyRelation = row.EmergencyContactRelation ? String(row.EmergencyContactRelation).trim() : null;
+        const bloodGroup = toTrimmedString(row.BloodGroup) || null;
+        const panNo = toTrimmedString(row.PANNumber) || null;
+        const aadharNo = toTrimmedString(row.AadharNumber) || null;
+        const religion = toTrimmedString(row.Religion) || null;
+        const emergencyRelation = toTrimmedString(row.EmergencyContactRelation) || null;
 
         // Field length validations
         if (!empId) {
@@ -633,12 +804,12 @@ exports.bulkCreate = async (req, res) => {
         }
 
         // Check if email already exists
-        const existingUser = await User.findOne({ where: { email: row.Email } });
+        const existingUser = await User.findOne({ where: { email: Email } });
         if (existingUser) {
           results.errors.push({
             row: rowNum,
             data: row,
-            error: `Email ${row.Email} already exists`
+            error: `Email ${Email} already exists`
           });
           continue;
         }
@@ -656,39 +827,42 @@ exports.bulkCreate = async (req, res) => {
 
         // Map department, designation, association
         let departmentId = null;
-        if (row.Department) {
-          departmentId = departmentMap[row.Department.toLowerCase()];
+        const DepartmentName = toTrimmedString(row.Department);
+        if (DepartmentName) {
+          departmentId = departmentMap[DepartmentName.toLowerCase()];
           if (!departmentId) {
             results.errors.push({
               row: rowNum,
               data: row,
-              error: `Department "${row.Department}" not found`
+              error: `Department "${DepartmentName}" not found`
             });
             continue;
           }
         }
 
         let designationId = null;
-        if (row.Designation) {
-          designationId = designationMap[row.Designation.toLowerCase()];
+        const DesignationName = toTrimmedString(row.Designation);
+        if (DesignationName) {
+          designationId = designationMap[DesignationName.toLowerCase()];
           if (!designationId) {
             results.errors.push({
               row: rowNum,
               data: row,
-              error: `Designation "${row.Designation}" not found`
+              error: `Designation "${DesignationName}" not found`
             });
             continue;
           }
         }
 
         let associationId = null;
-        if (row.Association) {
-          associationId = associationMap[row.Association.toLowerCase()];
+        const AssociationName = toTrimmedString(row.Association);
+        if (AssociationName) {
+          associationId = associationMap[AssociationName.toLowerCase()];
           if (!associationId) {
             results.errors.push({
               row: rowNum,
               data: row,
-              error: `Association "${row.Association}" not found`
+              error: `Association "${AssociationName}" not found`
             });
             continue;
           }
@@ -697,10 +871,11 @@ exports.bulkCreate = async (req, res) => {
         // Create user with default password
         const hashedPassword = await bcrypt.hash('password123', 10);
         const user = await User.create({
-          email: row.Email,
-          password: hashedPassword,
-          role_id: employeeRole.id
+          email: Email,
+          password: hashedPassword
         });
+        const { UserRole } = require('../models');
+        await UserRole.create({ user_id: user.id, role_id: employeeRole.id, status: 'Active' });
 
         // Prepare staff data
         const staffPayload = {
@@ -709,20 +884,20 @@ exports.bulkCreate = async (req, res) => {
           last_name: lastName,
           emp_id: empId,
           religion: religion,
-          date_of_birth: row.DateOfBirth || null,
-          phone_no: row.PhoneNumber || null,
+          date_of_birth: normalizeDate(row.DateOfBirth),
+          phone_no: toTrimmedString(row.PhoneNumber) || null,
           blood_group: bloodGroup,
-          emergency_contact_name: row.EmergencyContactName || null,
-          emergency_contact_number: row.EmergencyContactNumber || null,
+          emergency_contact_name: toTrimmedString(row.EmergencyContactName) || null,
+          emergency_contact_number: toTrimmedString(row.EmergencyContactNumber) || null,
           emergency_contact_relation: emergencyRelation,
           pan_no: panNo,
           aadhar_no: aadharNo,
-          date_of_joining: row.DateOfJoining || new Date().toISOString().split('T')[0],
-          tpm_pillar: row.TPMPillar || null,
+          date_of_joining: normalizeDate(row.DateOfJoining) || new Date().toISOString().split('T')[0],
+          tpm_pillar: toTrimmedString(row.TPMPillar) || null,
           staff_img: null,
-          award_recognition: row.AwardRecognition || null,
-          gender: row.Gender ? String(row.Gender).trim() : null,
-          address: row.Address ? String(row.Address).trim() : null
+          //award_recognition: toTrimmedString(row.AwardRecognition) || null,
+          gender: toTrimmedString(row.Gender) || null,
+          address: toTrimmedString(row.Address) || null
         };
 
         // Create staff
@@ -752,8 +927,8 @@ exports.bulkCreate = async (req, res) => {
         results.success.push({
           row: rowNum,
           name: fullName,
-          email: row.Email,
-          empId: row.EmployeeID
+          email: Email,
+          empId: empId
         });
 
       } catch (error) {
@@ -779,132 +954,7 @@ exports.bulkCreate = async (req, res) => {
   }
 };
 
-// Download Excel template for bulk upload
-exports.downloadTemplate = async (req, res) => {
-  try {
-    // Fetch all departments, designations, and associations for dropdowns
-    const [departments, designations, associations] = await Promise.all([
-      Department.findAll(),
-      Designation.findAll(),
-      Association.findAll()
-    ]);
-
-    // Predefined dropdown values
-    const religionOptions = ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Jain', 'Other'];
-    const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-    const relationOptions = ['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Son', 'Daughter', 'Other'];
-    const tpmPillarOptions = [
-      'Focused Improvement',
-      'Autonomous Maintenance',
-      'Quality Maintenance',
-      'Planned Maintenance',
-      'Early Management',
-      'Training & Education',
-      'Safety, Environment & Health (SHE)',
-      'Administrative TPM'
-    ];
-
-    // Create dropdown lists from database
-    const departmentList = departments.map(d => d.dept_name);
-    const designationList = designations.map(d => d.name);
-    const associationList = associations.map(a => a.asso_name);
-
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-
-    // Main template data with headers only
-    const templateData = [];
-
-    const ws = XLSX.utils.json_to_sheet(templateData);
-
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 20 }, // FirstName
-      { wch: 20 }, // MiddleName
-      { wch: 20 }, // LastName
-      { wch: 30 }, // Email
-      { wch: 15 }, // EmployeeID
-      { wch: 25 }, // Department
-      { wch: 25 }, // Designation
-      { wch: 15 }, // Religion
-      { wch: 25 }, // Association
-      { wch: 15 }, // DateOfBirth
-      { wch: 15 }, // PhoneNumber
-      { wch: 12 }, // BloodGroup
-      { wch: 25 }, // EmergencyContactName
-      { wch: 20 }, // EmergencyContactNumber
-      { wch: 25 }, // EmergencyContactRelation
-      { wch: 15 }, // PANNumber
-      { wch: 15 }, // AadharNumber
-      { wch: 15 }, // DateOfJoining
-      { wch: 30 }, // TPMPillar
-      { wch: 30 }  // AwardRecognition
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Staff Template');
-
-    // Create reference sheets for dropdown values
-    // Departments sheet
-    if (departmentList.length > 0) {
-      const deptSheet = XLSX.utils.aoa_to_sheet([
-        ['Available Departments'],
-        ...departmentList.map(d => [d])
-      ]);
-      deptSheet['!cols'] = [{ wch: 30 }];
-      XLSX.utils.book_append_sheet(wb, deptSheet, 'Departments');
-    }
-
-    // Designations sheet
-    if (designationList.length > 0) {
-      const desigSheet = XLSX.utils.aoa_to_sheet([
-        ['Available Designations'],
-        ...designationList.map(d => [d])
-      ]);
-      desigSheet['!cols'] = [{ wch: 30 }];
-      XLSX.utils.book_append_sheet(wb, desigSheet, 'Designations');
-    }
-
-    // Associations sheet
-    if (associationList.length > 0) {
-      const assoSheet = XLSX.utils.aoa_to_sheet([
-        ['Available Associations'],
-        ...associationList.map(a => [a])
-      ]);
-      assoSheet['!cols'] = [{ wch: 30 }];
-      XLSX.utils.book_append_sheet(wb, assoSheet, 'Associations');
-    }
-
-    // Reference values sheet
-    const refData = [
-      ['Religion Options', 'Blood Group Options', 'Relation Options', 'TPM Pillar Options'],
-      ...Array.from({ length: Math.max(religionOptions.length, bloodGroupOptions.length, relationOptions.length, tpmPillarOptions.length) }, (_, i) => [
-        religionOptions[i] || '',
-        bloodGroupOptions[i] || '',
-        relationOptions[i] || '',
-        tpmPillarOptions[i] || ''
-      ])
-    ];
-    const refSheet = XLSX.utils.aoa_to_sheet(refData);
-    refSheet['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 35 }];
-    XLSX.utils.book_append_sheet(wb, refSheet, 'Reference Values');
-
-    // Generate buffer
-    const buffer = XLSX.write(wb, { 
-      type: 'buffer', 
-      bookType: 'xlsx',
-      cellDates: true
-    });
-
-    // Set headers and send file
-    res.setHeader('Content-Disposition', 'attachment; filename=staff_upload_template.xlsx');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
-
-  } catch (error) {
-    console.error('Template download error:', error);
-    res.status(500).json({ message: error.message || 'Failed to generate template' });
-  }
-};
+// (Removed older XLSX-based template generator in favor of ExcelJS version below)
 
 // Use ExcelJS for template with proper dropdowns using hidden reference sheet
 exports.downloadTemplate = async (req, res) => {
@@ -1017,7 +1067,7 @@ exports.downloadTemplate = async (req, res) => {
       { header: 'AadharNumber', key: 'aadharNumber', width: 15 },
       { header: 'DateOfJoining', key: 'dateOfJoining', width: 15 },
       { header: 'TPMPillar', key: 'tpmPillar', width: 30 },
-      { header: 'AwardRecognition', key: 'awardRecognition', width: 30 }
+      //{ header: 'AwardRecognition', key: 'awardRecognition', width: 30 }
     ];
 
     // Template now has headers only, no example data

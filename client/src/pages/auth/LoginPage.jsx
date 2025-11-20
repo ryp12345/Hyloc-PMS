@@ -10,22 +10,138 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showRoleSelection, setShowRoleSelection] = useState(false)
+  const [availableRoles, setAvailableRoles] = useState([])
+  const [selectedRole, setSelectedRole] = useState('')
+  const [tempUserData, setTempUserData] = useState(null)
 
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      const user = await login(email, password)
-      switch (user.role) {
-        case 'Management': return nav('/dashboard/management')
-        case 'Manager': return nav('/dashboard/manager')
-        case 'HR': return nav('/dashboard/hr')
-        default: return nav('/dashboard/employee')
+      const result = await login(email, password)
+      console.log('Login result:', result)
+      
+      // Check if role selection is required
+      if (result && result.requiresRoleSelection) {
+        setAvailableRoles(result.availableRoles)
+        setTempUserData(result.user)
+        setShowRoleSelection(true)
+        return
       }
+      
+      // Navigate based on role (result is user object)
+      if (!result || !result.role) {
+        setError('User role not found. Please contact administrator.')
+        return
+      }
+      
+      navigateToRole(result.role)
     } catch (e) {
-      setError('Invalid credentials')
+      console.error('Login error:', e)
+      setError(e.message || 'Invalid credentials')
     }
   }
+
+  const handleRoleSelection = async (e) => {
+    e.preventDefault()
+    setError('')
+    try {
+      const user = await login(email, password, selectedRole)
+      navigateToRole(user?.role)
+    } catch (e) {
+      console.error('Role selection error:', e)
+      setError('Failed to login with selected role')
+    }
+  }
+
+  const navigateToRole = (role) => {
+    switch (role) {
+      case 'Management': return nav('/dashboard/management')
+      case 'Manager': return nav('/dashboard/manager')
+      case 'HR': return nav('/dashboard/hr')
+      default: return nav('/dashboard/employee')
+    }
+  }
+
+  // Role selection screen
+  if (showRoleSelection) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
+        <div className="w-full max-w-md px-4">
+          <form onSubmit={handleRoleSelection} className="bg-white p-8 rounded-2xl shadow-2xl space-y-6">
+            <div className="text-center">
+              <div className="mx-auto w-32 h-32 mb-6 flex items-center justify-center bg-white rounded-xl p-2">
+                <img src={hylocLogo} alt="Hyloc Logo" className="w-full h-full object-contain drop-shadow-lg" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Select Your Role</h2>
+              <p className="text-sm text-gray-600">Welcome, {tempUserData?.fullName || tempUserData?.email}</p>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-red-500 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Choose a role to continue</label>
+              <div className="space-y-2">
+                {availableRoles.map((role) => (
+                  <label 
+                    key={role}
+                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      selectedRole === role 
+                        ? 'border-indigo-600 bg-indigo-50' 
+                        : 'border-gray-200 hover:border-indigo-300 bg-white'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={role}
+                      checked={selectedRole === role}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-900">{role}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              type="submit"
+              disabled={!selectedRole}
+              className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+            >
+              Continue
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowRoleSelection(false)
+                setSelectedRole('')
+                setAvailableRoles([])
+                setTempUserData(null)
+              }}
+              className="w-full py-2 text-sm text-gray-600 hover:text-gray-800"
+            >
+              Back to Login
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  // Login screen
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">

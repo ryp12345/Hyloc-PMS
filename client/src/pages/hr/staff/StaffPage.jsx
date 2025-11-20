@@ -37,7 +37,6 @@ export default function StaffPage() {
   const [bulkResults, setBulkResults] = useState(null)
   const [form, setForm] = useState({
     email: '',
-    roleName: '',
     staff: { 
       first_name: '',
       middle_name: '',
@@ -58,11 +57,11 @@ export default function StaffPage() {
       date_of_joining: '',
       tpm_pillar: '',
       staff_img: '',
-      award_recognition: '',
       gender: '',
       address: ''
     }
   })
+  // Assign Role moved to dedicated page
   const RELIGION_OPTIONS = [
     'Hindu',
     'Muslim',
@@ -80,7 +79,21 @@ export default function StaffPage() {
   const load = async () => {
     try {
       const res = await api.get('/users')
-      setRows(res.data)
+      const users = res.data || []
+      
+      // Fetch role assignments for each user
+      const usersWithRoles = await Promise.all(
+        users.map(async (user) => {
+          try {
+            const rolesRes = await api.get(`/users/${user.id}/roles`)
+            return { ...user, roleAssignments: rolesRes.data || [] }
+          } catch (e) {
+            return { ...user, roleAssignments: [] }
+          }
+        })
+      )
+      
+      setRows(usersWithRoles)
     } catch (e) {
       setRows([])
     }
@@ -105,7 +118,6 @@ export default function StaffPage() {
     setImagePreview(null)
     setForm({ 
       email: '', 
-      roleName: '', 
       staff: { 
         first_name: '',
         middle_name: '',
@@ -126,7 +138,6 @@ export default function StaffPage() {
         date_of_joining: '',
         tpm_pillar: '',
         staff_img: '',
-        award_recognition: '',
         gender: '',
         address: ''
       } 
@@ -151,7 +162,6 @@ export default function StaffPage() {
     
     setForm({
       email: row.email || '',
-      roleName: row.role || '',
       staff: {
         first_name: row.staff?.first_name || '',
         middle_name: row.staff?.middle_name || '',
@@ -172,7 +182,6 @@ export default function StaffPage() {
         date_of_joining: row.staff?.date_of_joining || '',
         tpm_pillar: row.staff?.tpm_pillar || '',
         staff_img: row.staff?.staff_img || '',
-        award_recognition: row.staff?.award_recognition || '',
         gender: row.staff?.gender || '',
         address: row.staff?.address || ''
       }
@@ -278,9 +287,12 @@ export default function StaffPage() {
       }
 
       if (editingId) {
+        // Ensure no roleName is sent in edit
+        delete payload.roleName
         await api.put(`/users/${editingId}`, payload)
       } else {
-        // Backend will set password123 as default
+        // CREATE: do not send roleName; roles assigned separately
+        delete payload.roleName
         await api.post('/users', payload)
       }
       onClose(); load()
@@ -359,6 +371,8 @@ export default function StaffPage() {
     setError('')
   }
 
+  // Assign Role functionality moved to dedicated page
+
 
 
   // Pagination state
@@ -367,12 +381,19 @@ export default function StaffPage() {
 
   // Filtered and sorted data
   const filtered = useMemo(() => {
-    // Sort latest first using Staff.createdAt when available, else by id desc
+    // Sort latest first using Staff.created_at (underscored) or createdAt, fallback to staff id desc
+    const getTime = (u) => {
+      const s = u.staff;
+      if (!s) return 0;
+      const t = s.created_at || s.createdAt;
+      return t ? new Date(t).getTime() : 0;
+    };
     const sorted = [...rows].sort((a, b) => {
-      const aTime = a.staff?.createdAt ? new Date(a.staff.createdAt).getTime() : 0;
-      const bTime = b.staff?.createdAt ? new Date(b.staff.createdAt).getTime() : 0;
+      const aTime = getTime(a);
+      const bTime = getTime(b);
       if (bTime !== aTime) return bTime - aTime;
-      return (b.id || 0) - (a.id || 0);
+      // If timestamps equal, try staff.id (incremental) then fallback to 0
+      return (b.staff?.id || 0) - (a.staff?.id || 0);
     });
     const q = search.toLowerCase();
     return sorted.filter(r => {
@@ -444,7 +465,8 @@ export default function StaffPage() {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">S.NO</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Roles</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Department</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Designation</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Association</th>
@@ -453,13 +475,50 @@ export default function StaffPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="7" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
+                  <tr><td colSpan="8" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
                 ) : (
                   paginated.map((u, idx) => (
                     <tr key={u.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{[u.staff?.first_name, u.staff?.middle_name, u.staff?.last_name].filter(Boolean).join(' ') || u.fullName || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm"><span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">{u.role}</span></td>
+                      {/* Roles column */}
+                      <td className="px-6 py-4 text-sm">
+                        {u.roleAssignments && u.roleAssignments.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {u.roleAssignments.map((ra, raIdx) => (
+                              <span
+                                key={raIdx}
+                                className="px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap bg-indigo-100 text-indigo-800"
+                              >
+                                {ra.role}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">No roles</span>
+                        )}
+                      </td>
+                      {/* Status column */}
+                      <td className="px-6 py-4 text-sm">
+                        {u.roleAssignments && u.roleAssignments.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {u.roleAssignments.map((ra, raIdx) => (
+                              <span
+                                key={raIdx}
+                                className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                                  ra.status === 'Active'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {ra.status}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">--</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Departments?.[0]?.dept_name || u.staff?.Department?.dept_name || u.staff?.department || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Designations?.[0]?.name || u.staff?.Designation?.name || u.staff?.designation || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Associations?.[0]?.asso_name || u.staff?.Association?.asso_name || '-'}</td>
@@ -495,7 +554,7 @@ export default function StaffPage() {
                           </button>
                         </div>
                       </td>
-                    </tr>
+                    </tr> 
                   ))
                 )}
         {/* Pagination Controls */}
@@ -560,13 +619,6 @@ export default function StaffPage() {
                         <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
                         <input type="email" value={form.email} onChange={e=>setForm({ ...form, email: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Email Address" required />
                       </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">Role</label>
-                        <select value={form.roleName} onChange={e=>setForm({ ...form, roleName: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                          <option value="">Select Role</option>
-                          {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-                        </select>
-                      </div>
                     </div>
 
                     <div className="pt-2 border-t border-gray-100">
@@ -582,7 +634,7 @@ export default function StaffPage() {
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Phone Number</label>
-                          <input type="tel" value={form.staff.phone_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, phone_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="1234567890" />
+                          <input type="tel" value={form.staff.phone_no} onChange={e=>setForm({ ...form, staff: { ...form.staff, phone_no: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="1234567890" maxLength="10" />
                         </div>
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Blood Group</label>
@@ -738,10 +790,6 @@ export default function StaffPage() {
                             )}
                           </div>
                           <p className="mt-1 text-xs text-gray-500">Upload staff photo (Max 5MB, formats: JPG, PNG, GIF, WebP)</p>
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block mb-2 text-sm font-medium text-gray-700">Award & Recognition</label>
-                          <textarea value={form.staff.award_recognition} onChange={e=>setForm({ ...form, staff: { ...form.staff, award_recognition: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter awards and recognitions..." rows="3" />
                         </div>
                       </div>
                     </div>
@@ -947,6 +995,7 @@ export default function StaffPage() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   )

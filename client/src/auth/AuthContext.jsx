@@ -70,8 +70,14 @@ export function AuthProvider({ children }) {
     tryRestore()
   }, [dispatch])
 
-  const login = async (email, password) => {
-    const result = await dispatch(loginUser({ email, password })).unwrap()
+  const login = async (email, password, selectedRole = null) => {
+    const result = await dispatch(loginUser({ email, password, selectedRole })).unwrap()
+    
+    // If role selection is required, return the info without storing
+    if (result.requiresRoleSelection) {
+      return result
+    }
+    
     return result.user
   }
 

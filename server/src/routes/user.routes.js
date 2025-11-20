@@ -18,6 +18,8 @@ const upload = multer({
 });
 
 router.use(authenticate);
+// Role assignments (HR/Management)
+router.get('/role-assignments', ctrl.listAssignments);
 router.get('/staff-names', ctrl.getStaffNames); // Must be before /:id route
 router.get('/staff-by-department', ctrl.getStaffByDepartment); // Must be before /:id route
 router.get('/download-template', ctrl.downloadTemplate); // Download Excel template
@@ -29,5 +31,10 @@ router.get('/:id', ctrl.get);
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.remove);
+// Role assignment endpoints
+router.post('/:id/assign-role', ctrl.assignRole);
+router.get('/:id/roles', ctrl.getUserRoles);
+router.put('/:id/roles/:assignmentId', ctrl.updateAssignment);
+router.delete('/:id/roles/:assignmentId', ctrl.deleteAssignment);
 
 module.exports = router;

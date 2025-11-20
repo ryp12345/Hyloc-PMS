@@ -4,9 +4,21 @@ import { authService } from '../../api/authApi'
 // Async thunks
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password, selectedRole }, { rejectWithValue }) => {
     try {
-      const response = await authService.login(email, password)
+      const response = await authService.login(email, password, selectedRole)
+      
+      console.log('Login response:', response.data)
+      
+      // If role selection is required, return that info
+      if (response.data.requiresRoleSelection) {
+        return {
+          requiresRoleSelection: true,
+          availableRoles: response.data.availableRoles,
+          user: response.data.user
+        }
+      }
+      
       const { user, accessToken, refreshToken } = response.data
       
       // Store in localStorage
@@ -14,6 +26,7 @@ export const loginUser = createAsyncThunk(
       
       return { user, accessToken, refreshToken }
     } catch (error) {
+      console.error('Login API error:', error.response?.data || error.message)
       return rejectWithValue(error.response?.data?.message || 'Login failed')
     }
   }
@@ -110,6 +123,14 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false
+        
+        // If role selection is required, don't update auth state yet
+        if (action.payload.requiresRoleSelection) {
+          state.error = null
+          return
+        }
+        
+        // Normal login flow
         state.user = action.payload.user
         state.accessToken = action.payload.accessToken
         state.refreshToken = action.payload.refreshToken

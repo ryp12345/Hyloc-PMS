@@ -20,11 +20,13 @@ import { AuthProvider, useAuth } from './auth/AuthContext'
 import StaffPage from './pages/hr/staff/StaffPage'
 import StaffViewPage from './pages/hr/staff/StaffViewPage'
 import ManagerStaffPage from './pages/manager/staff/StaffPage'
+import ManagerStaffViewPage from './pages/manager/staff/StaffViewPage'
 import DepartmentsPage from './pages/hr/departments/DepartmentsPage'
 import DesignationsPage from './pages/hr/designations/DesignationsPage'
 import AssociationsPage from './pages/hr/associations/AssociationsPage'
 import QualificationsPage from './pages/hr/qualifications/QualificationsPage'
 import RolesPage from './pages/hr/roles/RolesPage'
+import AssignRolePage from './pages/hr/staff/AssignRolePage'
 import GoalListPage from './pages/management/goals/GoalListPage'
 import GoalFormPage from './pages/management/goals/GoalFormPage'
 
@@ -61,7 +63,10 @@ export default function App() {
           <Route path="analytics" element={<ProtectedRoute roles={['Manager','Management']}><AnalyticsPage /></ProtectedRoute>} />
           <Route path="staff" element={<ProtectedRoute roles={['HR']}><StaffPage /></ProtectedRoute>} />
           <Route path="staff/view/:id" element={<ProtectedRoute roles={['HR']}><StaffViewPage /></ProtectedRoute>} />
+          <Route path="staff/assign-role" element={<ProtectedRoute roles={['HR']}><AssignRolePage /></ProtectedRoute>} />
+          <Route path="staff/assign-role/:id" element={<ProtectedRoute roles={['HR']}><AssignRolePage /></ProtectedRoute>} />
           <Route path="manager/staff" element={<ProtectedRoute roles={['Manager','Management']}><ManagerStaffPage /></ProtectedRoute>} />
+          <Route path="manager/staff/view/:id" element={<ProtectedRoute roles={['Manager','Management']}><ManagerStaffViewPage /></ProtectedRoute>} />
           <Route path="departments" element={<ProtectedRoute roles={['HR','Management']}><DepartmentsPage /></ProtectedRoute>} />
           <Route path="designations" element={<ProtectedRoute roles={['HR','Management']}><DesignationsPage /></ProtectedRoute>} />
           <Route path="associations" element={<ProtectedRoute roles={['HR','Management']}><AssociationsPage /></ProtectedRoute>} />
