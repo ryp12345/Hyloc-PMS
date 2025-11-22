@@ -8,13 +8,26 @@ export default function LeaveCalendar({
   allStaff = [],
   leaveBalance,
   onLeaveSubmit,
+  onLeaveCancel,
   joinDate,
-  canApply = true
+  canApply = true,
+  viewMode = 'month',
+  onViewModeChange
 }) {
   const [selectedDate, setSelectedDate] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showDayDetail, setShowDayDetail] = useState(false)
   const [dayLeaves, setDayLeaves] = useState([])
+  const [isPastDate, setIsPastDate] = useState(false)
+  const [editingLeave, setEditingLeave] = useState(null)
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    const today = new Date()
+    const currentDay = today.getDay()
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() - currentDay)
+    weekStart.setHours(0, 0, 0, 0)
+    return weekStart
+  })
   const [form, setForm] = useState({
     from_date: new Date().toISOString().split('T')[0],
     to_date: '',
@@ -54,6 +67,74 @@ export default function LeaveCalendar({
     }
   }, [form.from_date, form.to_date, form.leave_duration])
 
+  // Handle edit leave click
+  const handleEditLeave = (leave) => {
+    setEditingLeave(leave)
+    setForm({
+      from_date: leave.from_date,
+      to_date: leave.to_date,
+      leave_duration: leave.leave_duration,
+      alternate_person: leave.alternate_person || '',
+      additional_alternate: leave.additional_alternate || '',
+      leave_reason: leave.leave_reason || '',
+      available_on_phone: leave.available_on_phone !== undefined ? leave.available_on_phone : true
+    })
+    setShowDayDetail(false)
+    setIsModalOpen(true)
+  }
+
+  // Handle cancel leave request
+  const handleCancelLeave = async () => {
+    if (!editingLeave) return
+    
+    // Parse leave dates to check if partial cancellation will occur
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const fromDate = new Date(editingLeave.from_date + 'T00:00:00');
+    const toDate = new Date(editingLeave.to_date + 'T00:00:00');
+    
+    let confirmMessage = 'Are you sure you want to cancel this leave request?';
+    
+    if (fromDate < today && toDate >= today) {
+      // Partial cancellation
+      confirmMessage = 'Some dates in this leave have already passed. Only future dates will be cancelled. The past dates will be retained. Continue?';
+    } else if (toDate < today) {
+      alert('Cannot cancel this leave as all dates have already been consumed.');
+      return;
+    }
+    
+    const confirmCancel = window.confirm(confirmMessage)
+    
+    if (!confirmCancel) return
+    
+    try {
+      const result = await onLeaveCancel(editingLeave.id)
+      
+      // Show appropriate message based on cancellation type
+      if (result?.type === 'partial') {
+        alert(`Leave partially cancelled!\n${result.cancelledDays} day(s) cancelled\n${result.retainedDays} day(s) retained (already consumed)`);
+      } else {
+        alert('Leave request cancelled successfully!');
+      }
+      
+      setIsModalOpen(false)
+      setEditingLeave(null)
+      setForm({
+        from_date: new Date().toISOString().split('T')[0],
+        to_date: '',
+        leave_duration: 'Full Day',
+        alternate_person: '',
+        additional_alternate: '',
+        leave_reason: '',
+        available_on_phone: true
+      })
+    } catch (error) {
+      console.error('Failed to cancel leave:', error)
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to cancel leave request'
+      alert(errorMessage)
+    }
+  }
+
   // Handle leave duration change
   const handleDurationChange = (duration) => {
     setForm(prev => ({
@@ -85,14 +166,15 @@ export default function LeaveCalendar({
     const leaveData = {
       ...form,
       credited_days: creditedDays,
-      leave_type: leaveType
+      leave_type: leaveType,
+      ...(editingLeave && { id: editingLeave.id })
     }
     
     try {
-      await onLeaveSubmit(leaveData)
+      await onLeaveSubmit(leaveData, editingLeave ? 'edit' : 'create')
       
       // Show success message
-      alert('Leave application submitted successfully! It is now pending approval.')
+      alert(editingLeave ? 'Leave updated successfully!' : 'Leave application submitted successfully! It is now pending approval.')
       
       // Reset form and close modal
       setForm({
@@ -106,6 +188,7 @@ export default function LeaveCalendar({
       })
       setNoOfDays(0)
       setIsModalOpen(false)
+      setEditingLeave(null)
     } catch (error) {
       console.error('Failed to submit leave application:', error)
       const errorMessage = error?.message || error?.response?.data?.message || error || 'Unknown error occurred'
@@ -128,23 +211,72 @@ export default function LeaveCalendar({
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = getFirstDayOfMonth(year, month)
 
+  // Week view calculations
+  const getWeekDays = () => {
+    const weekDays = []
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(currentWeekStart)
+      day.setDate(currentWeekStart.getDate() + i)
+      weekDays.push(day)
+    }
+    return weekDays
+  }
+
+  // Week navigation handlers
+  const handleWeekChange = (direction) => {
+    if (direction === 'prev') {
+      const newWeekStart = new Date(currentWeekStart)
+      newWeekStart.setDate(currentWeekStart.getDate() - 7)
+      setCurrentWeekStart(newWeekStart)
+    } else if (direction === 'next') {
+      const newWeekStart = new Date(currentWeekStart)
+      newWeekStart.setDate(currentWeekStart.getDate() + 7)
+      setCurrentWeekStart(newWeekStart)
+    } else if (direction === 'today') {
+      const today = new Date()
+      const currentDay = today.getDay()
+      const weekStart = new Date(today)
+      weekStart.setDate(today.getDate() - currentDay)
+      weekStart.setHours(0, 0, 0, 0)
+      setCurrentWeekStart(weekStart)
+    }
+  }
+
   // Navigation boundaries
   const monthStart = new Date(year, month, 1)
   const today = new Date()
+  today.setHours(0, 0, 0, 0)
   const todayMonthStart = new Date(today.getFullYear(), today.getMonth(), 1)
   const maxFutureMonthStart = new Date(todayMonthStart)
   maxFutureMonthStart.setMonth(maxFutureMonthStart.getMonth() + 12)
+  
+  // Week navigation boundaries
+  const maxFutureWeekStart = new Date(today)
+  maxFutureWeekStart.setFullYear(today.getFullYear() + 1)
+  maxFutureWeekStart.setDate(today.getDate() - today.getDay()) // Align to Sunday
+  
   let minPastMonthStart = null
+  let minPastWeekStart = null
   if (joinDate) {
     const jd = new Date(joinDate)
     if (!isNaN(jd)) {
       minPastMonthStart = new Date(jd.getFullYear(), jd.getMonth(), 1)
+      // For week view, go to the Sunday of the join date week
+      const joinDay = jd.getDay()
+      minPastWeekStart = new Date(jd)
+      minPastWeekStart.setDate(jd.getDate() - joinDay)
+      minPastWeekStart.setHours(0, 0, 0, 0)
     }
   }
+  
   const canGoPrev = minPastMonthStart ? monthStart > minPastMonthStart : true
   const canGoNext = monthStart < maxFutureMonthStart
+  
+  // Week navigation boundaries
+  const canGoWeekPrev = minPastWeekStart ? currentWeekStart > minPastWeekStart : currentWeekStart > today
+  const canGoWeekNext = currentWeekStart < maxFutureWeekStart
 
-  // Create array of days
+  // Create array of days for month view
   const days = []
   
   // Add empty cells for days before month starts
@@ -157,11 +289,22 @@ export default function LeaveCalendar({
     days.push(day)
   }
 
-  // Check if a day has a leave
-  const getLeaveForDay = (day) => {
-    if (!day) return null
+  // Week view days
+  const weekDays = viewMode === 'week' ? getWeekDays() : []
+
+  // Check if a day has a leave (works for both month and week view)
+  const getLeaveForDay = (day, dateObj = null) => {
+    let dateStr
     
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    if (viewMode === 'week' && dateObj) {
+      // Week view: dateObj is a Date object
+      const d = new Date(dateObj)
+      dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    } else {
+      // Month view: day is a number
+      if (!day) return null
+      dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    }
     
     return leaves.find(leave => {
       const fromDate = new Date(leave.from_date)
@@ -170,6 +313,23 @@ export default function LeaveCalendar({
       
       return checkDate >= fromDate && checkDate <= toDate
     })
+  }
+
+  // Check if day is today (works for both views)
+  const isToday = (day, dateObj = null) => {
+    const today = new Date()
+    
+    if (viewMode === 'week' && dateObj) {
+      const d = new Date(dateObj)
+      return d.getDate() === today.getDate() && 
+             d.getMonth() === today.getMonth() && 
+             d.getFullYear() === today.getFullYear()
+    } else {
+      if (!day) return false
+      return day === today.getDate() && 
+             month === today.getMonth() && 
+             year === today.getFullYear()
+    }
   }
 
   // Get leave status color
@@ -188,20 +348,23 @@ export default function LeaveCalendar({
     }
   }
 
-  // Check if day is today
-  const isToday = (day) => {
-    if (!day) return false
-    const today = new Date()
-    return day === today.getDate() && 
-           month === today.getMonth() && 
-           year === today.getFullYear()
-  }
-
   // Handle day click
-  const handleDayClick = (day) => {
-    if (!day) return
+  const handleDayClick = (day, dateObj = null) => {
+    let dateStr, clickedDate
     
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    if (viewMode === 'week' && dateObj) {
+      // Week view: day is a Date object
+      clickedDate = new Date(dateObj)
+      dateStr = `${clickedDate.getFullYear()}-${String(clickedDate.getMonth() + 1).padStart(2, '0')}-${String(clickedDate.getDate()).padStart(2, '0')}`
+    } else {
+      // Month view: day is a number
+      if (!day) return
+      dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      clickedDate = new Date(dateStr)
+    }
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
     
     // Check if this day has any leaves
     const leavesOnDay = leaves.filter(leave => {
@@ -211,14 +374,25 @@ export default function LeaveCalendar({
       return checkDate >= fromDate && checkDate <= toDate
     })
     
+    // Check if the clicked date is in the past
+    const isPastDate = clickedDate < today
+    
     if (leavesOnDay.length > 0) {
-      // Show day detail popup
-      setDayLeaves(leavesOnDay)
-      setSelectedDate(dateStr)
-      setShowDayDetail(true)
+      // If there's only one leave and it's not a past date and user can apply, directly open edit modal
+      if (leavesOnDay.length === 1 && !isPastDate && canApply) {
+        handleEditLeave(leavesOnDay[0])
+      } else {
+        // Show day detail popup for multiple leaves or past dates
+        setDayLeaves(leavesOnDay)
+        setSelectedDate(dateStr)
+        setShowDayDetail(true)
+        // Store whether this is a past date to disable "Apply New Leave" button
+        setIsPastDate(isPastDate)
+      }
     } else {
-      // Open apply modal only if allowed
+      // Open apply modal only if allowed and date is today or future
       if (!canApply) return
+      if (clickedDate < today) return // Don't open modal for past dates
       setSelectedDate(dateStr)
       setIsModalOpen(true)
     }
@@ -234,38 +408,68 @@ export default function LeaveCalendar({
   return (
     <div className="bg-white rounded-xl shadow-lg">
       {/* Calendar Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-blue-600 bg-blue-600">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {monthNames[month]} {year}
+          <h3 className="text-lg font-semibold text-white">
+            {viewMode === 'week' ? `Week of ${weekDays[0]?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekDays[6]?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : `${monthNames[month]} ${year}`}
           </h3>
           <div className="flex items-center space-x-2">
+            {viewMode === 'month' && (
+              <>
+                <button
+                  onClick={() => canGoPrev && onMonthChange('prev')}
+                  className={`p-2 transition-colors rounded-lg ${canGoPrev ? 'text-white hover:bg-blue-700' : 'text-blue-300 cursor-not-allowed'}`}
+                  title={canGoPrev ? 'Previous Month' : 'Reached join month'}
+                  disabled={!canGoPrev}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </>
+            )}
+            {viewMode === 'week' && (
+              <button
+                onClick={() => canGoWeekPrev && handleWeekChange('prev')}
+                className={`p-2 transition-colors rounded-lg ${canGoWeekPrev ? 'text-white hover:bg-blue-700' : 'text-blue-300 cursor-not-allowed'}`}
+                title={canGoWeekPrev ? 'Previous Week' : 'Reached join week'}
+                disabled={!canGoWeekPrev}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
             <button
-              onClick={() => canGoPrev && onMonthChange('prev')}
-              className={`p-2 transition-colors rounded-lg ${canGoPrev ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' : 'text-gray-300 cursor-not-allowed'}`}
-              title={canGoPrev ? 'Previous Month' : 'Reached join month'}
-              disabled={!canGoPrev}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={() => onMonthChange('today')}
-              className="px-3 py-1 text-sm font-medium text-white transition-colors rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              onClick={() => viewMode === 'month' ? onMonthChange('today') : handleWeekChange('today')}
+              className="px-3 py-1 text-sm font-medium text-white transition-colors bg-blue-700 border border-white rounded-lg hover:bg-blue-800"
             >
               Today
             </button>
-            <button
-              onClick={() => canGoNext && onMonthChange('next')}
-              className={`p-2 transition-colors rounded-lg ${canGoNext ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' : 'text-gray-300 cursor-not-allowed'}`}
-              title={canGoNext ? 'Next Month' : 'Max 12 months ahead'}
-              disabled={!canGoNext}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            {viewMode === 'month' && (
+              <button
+                onClick={() => canGoNext && onMonthChange('next')}
+                className={`p-2 transition-colors rounded-lg ${canGoNext ? 'text-white hover:bg-blue-700' : 'text-blue-300 cursor-not-allowed'}`}
+                title={canGoNext ? 'Next Month' : 'Max 12 months ahead'}
+                disabled={!canGoNext}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+            {viewMode === 'week' && (
+              <button
+                onClick={() => canGoWeekNext && handleWeekChange('next')}
+                className={`p-2 transition-colors rounded-lg ${canGoWeekNext ? 'text-white hover:bg-blue-700' : 'text-blue-300 cursor-not-allowed'}`}
+                title={canGoWeekNext ? 'Next Week' : 'Max 1 year ahead'}
+                disabled={!canGoWeekNext}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -273,70 +477,117 @@ export default function LeaveCalendar({
       {/* Calendar Grid */}
       <div className="p-4">
         {/* Day names */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-7 border-l border-t border-gray-400">
           {dayNames.map(day => (
-            <div key={day} className="p-2 text-xs font-semibold text-center text-gray-600">
+            <div key={day} className="p-2 text-xs font-semibold text-center text-blue-800 bg-blue-100 border-r border-b border-gray-400">
               {day}
             </div>
           ))}
         </div>
 
-        {/* Calendar days */}
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day, index) => {
-            const leave = getLeaveForDay(day)
-            const todayClass = isToday(day) ? 'ring-2 ring-blue-500' : ''
+        {/* Calendar days - Month View */}
+        {viewMode === 'month' && (
+          <div className="grid grid-cols-7 border-l border-gray-400">
+            {days.map((day, index) => {
+              const leave = getLeaveForDay(day)
+              const isTodayCell = isToday(day)
+              const todayClass = isTodayCell ? 'border-2 border-blue-400' : ''
 
-            // Determine past vs future for styling
-            let temporalClass = ''
-            if (day) {
-              const cellDate = new Date(year, month, day)
+              // Determine past vs future for styling
+              let temporalClass = ''
+              if (day) {
+                const cellDate = new Date(year, month, day)
+                const todayStart = new Date()
+                todayStart.setHours(0,0,0,0)
+                if (cellDate < todayStart) {
+                  temporalClass = 'opacity-80'
+                }
+              }
+
+              const leaveClass = leave ? getLeaveColor(leave) : 'bg-white hover:bg-gray-50'
+              
+              return (
+                <div
+                  key={index}
+                  onClick={() => handleDayClick(day)}
+                  className={`
+                    relative min-h-[80px] p-2 ${isTodayCell ? '' : 'border-r border-b'} border-gray-400 cursor-pointer transition-all
+                    ${day ? leaveClass : 'bg-gray-50 cursor-default'}
+                    ${todayClass}
+                    ${day ? temporalClass : ''}
+                  `}
+                >
+                  {day && (
+                    <>
+                      <div className={`text-sm font-medium ${isTodayCell ? 'text-blue-600' : 'text-gray-700'}`}>
+                        {day}
+                      </div>
+                      {leave && (
+                        <div className="flex items-center justify-center mt-1">
+                          <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${
+                            leave.leave_duration === 'Full Day' ? 'bg-indigo-600 text-white' : 
+                            leave.leave_duration === 'Morning Half' ? 'bg-amber-500 text-white' : 
+                            'bg-purple-500 text-white'
+                          }`}>
+                            {leave.leave_duration === 'Full Day' ? 'FULL' : 
+                             leave.leave_duration === 'Morning Half' ? 'AM' : 'PM'}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Calendar days - Week View */}
+        {viewMode === 'week' && (
+          <div className="grid grid-cols-7 border-l border-gray-400">
+            {weekDays.map((dateObj, index) => {
+              const leave = getLeaveForDay(null, dateObj)
+              const isTodayCell = isToday(null, dateObj)
+              const todayClass = isTodayCell ? 'border-2 border-blue-400' : ''
+
+              // Determine past vs future for styling
               const todayStart = new Date()
               todayStart.setHours(0,0,0,0)
-              if (cellDate < todayStart) {
-                temporalClass = 'opacity-80'
-              } else if (cellDate > todayStart) {
-                temporalClass = 'ring-1 ring-indigo-200'
-              }
-            }
+              const temporalClass = dateObj < todayStart ? 'opacity-80' : ''
 
-            const leaveClass = leave ? getLeaveColor(leave) : 'bg-white hover:bg-gray-50'
-            
-            return (
-              <div
-                key={index}
-                onClick={() => handleDayClick(day)}
-                className={`
-                  relative min-h-[60px] p-2 border rounded-lg cursor-pointer transition-all
-                  ${day ? leaveClass : 'bg-gray-50 cursor-default'}
-                  ${todayClass}
-                  ${day ? temporalClass : ''}
-                  ${!leave && day ? 'border-gray-200 hover:border-indigo-300 hover:shadow-sm' : ''}
-                `}
-              >
-                {day && (
-                  <>
-                    <div className={`text-sm font-medium ${isToday(day) ? 'text-blue-600' : 'text-gray-700'}`}>
-                      {day}
+              const leaveClass = leave ? getLeaveColor(leave) : 'bg-white hover:bg-gray-50'
+              
+              return (
+                <div
+                  key={index}
+                  onClick={() => handleDayClick(null, dateObj)}
+                  className={`
+                    relative min-h-[80px] p-2 ${isTodayCell ? '' : 'border-r border-b'} border-gray-400 cursor-pointer transition-all
+                    ${leaveClass}
+                    ${todayClass}
+                    ${temporalClass}
+                  `}
+                >
+                  <div className={`text-sm font-medium ${isTodayCell ? 'text-blue-600' : 'text-gray-700'}`}>
+                    {dateObj.getDate()}
+                  </div>
+                  {leave && (
+                    <div className="flex items-center justify-center mt-1">
+                      <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${
+                        leave.leave_duration === 'Full Day' ? 'bg-indigo-600 text-white' : 
+                        leave.leave_duration === 'Morning Half' ? 'bg-amber-500 text-white' : 
+                        'bg-purple-500 text-white'
+                      }`}>
+                        {leave.leave_duration === 'Full Day' ? 'FULL' : 
+                         leave.leave_duration === 'Morning Half' ? 'AM' : 'PM'}
+                      </span>
                     </div>
-                    {leave && (
-                      <div className="flex items-center justify-center mt-1">
-                        <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${
-                          leave.leave_duration === 'Full Day' ? 'bg-indigo-600 text-white' : 
-                          leave.leave_duration === 'Morning Half' ? 'bg-amber-500 text-white' : 
-                          'bg-purple-500 text-white'
-                        }`}>
-                          {leave.leave_duration === 'Full Day' ? 'FULL' : 
-                           leave.leave_duration === 'Morning Half' ? 'AM' : 'PM'}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Legend */}
@@ -433,6 +684,16 @@ export default function LeaveCalendar({
                       <span className="font-medium">Type:</span> {lv.leave_type}
                       {lv.available_on_phone && ' • Available on phone'}
                     </p>
+                    
+                    {/* Edit button for non-past dates */}
+                    {!isPastDate && canApply && (
+                      <button
+                        onClick={() => handleEditLeave(lv)}
+                        className="px-3 py-1 mt-3 text-xs font-medium text-indigo-600 transition-colors border border-indigo-600 rounded hover:bg-indigo-50"
+                      >
+                        Edit Leave
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -445,7 +706,7 @@ export default function LeaveCalendar({
                 >
                   Close
                 </button>
-                {canApply && (
+                {canApply && !isPastDate && (
                   <button
                     onClick={() => {
                       setShowDayDetail(false)
@@ -473,10 +734,13 @@ export default function LeaveCalendar({
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  Apply for Leave
+                  {editingLeave ? 'Edit Leave' : 'Apply for Leave'}
                 </h2>
                 <button
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false)
+                    setEditingLeave(null)
+                  }}
                   className="text-white transition-colors hover:text-gray-200"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -516,9 +780,9 @@ export default function LeaveCalendar({
                     <input
                       required
                       type="date"
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       value={form.from_date}
-                      onChange={e=>setForm({...form, from_date:e.target.value})}
+                      readOnly
                     />
                   </div>
                   
@@ -639,23 +903,39 @@ export default function LeaveCalendar({
                 </div>
                 
                 {/* Modal Footer - Buttons */}
-                <div className="flex justify-end pt-4 space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-6 py-3 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="inline-flex items-center px-6 py-3 text-sm font-medium text-white transition-all duration-300 transform border border-transparent rounded-lg shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Apply for Leave
-                  </button>
+                <div className="flex justify-between pt-4">
+                  <div>
+                    {editingLeave && (
+                      <button
+                        type="button"
+                        onClick={handleCancelLeave}
+                        className="px-6 py-3 text-sm font-medium text-white transition-colors bg-red-600 border border-transparent rounded-lg hover:bg-red-700"
+                      >
+                        Cancel Leave Request
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsModalOpen(false)
+                        setEditingLeave(null)
+                      }}
+                      className="px-6 py-3 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Close
+                    </button>
+                    <button 
+                      type="submit"
+                      className="inline-flex items-center px-6 py-3 text-sm font-medium text-white transition-all duration-300 transform border border-transparent rounded-lg shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {editingLeave ? 'Update Leave' : 'Apply for Leave'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

@@ -49,20 +49,6 @@ export default function HRDashboard() {
           <div className="p-6 transition-all duration-300 transform bg-white shadow-lg rounded-xl hover:-translate-y-1 hover:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Leave Requests</p>
-                <p className="text-3xl font-bold text-yellow-600">{leaveCount}</p>
-              </div>
-              <div className="p-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 transition-all duration-300 transform bg-white shadow-lg rounded-xl hover:-translate-y-1 hover:shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm font-medium text-gray-600">Open Tickets</p>
                 <p className="text-3xl font-bold text-red-600">{ticketCount}</p>
               </div>
@@ -95,17 +81,6 @@ export default function HRDashboard() {
                 <div>
                   <p className="font-semibold text-gray-900">Manage Staff</p>
                   <p className="text-sm text-gray-600">View and manage all staff members</p>
-                </div>
-              </a>
-              <a href="/leaves" className="flex items-center p-4 transition-all duration-200 border border-gray-200 rounded-lg hover:shadow-md hover:border-indigo-300">
-                <div className="p-2 mr-4 bg-yellow-500 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Apply for Leave</p>
-                  <p className="text-sm text-gray-600">Submit leave requests</p>
                 </div>
               </a>
             </div>

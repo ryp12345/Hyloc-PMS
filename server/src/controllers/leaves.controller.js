@@ -313,15 +313,66 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
-  const row = await Leave.findByPk(req.params.id);
-  if (!row) return res.status(404).json({ message: 'Not found' });
-  
-  // Only the user who created it can delete, and only if status is Pending
-  if (row.user_id !== req.user.id) return res.status(403).json({ message: 'Forbidden' });
-  if (row.status !== 'Pending') return res.status(400).json({ message: 'Can only delete pending leaves' });
-  
-  await row.destroy();
-  res.json({ message: 'Deleted' });
+  try {
+    const row = await Leave.findByPk(req.params.id);
+    if (!row) return res.status(404).json({ message: 'Not found' });
+    
+    // Only the user who created it can delete, and only if status is Pending
+    if (row.user_id !== req.user.id) return res.status(403).json({ message: 'Forbidden' });
+    if (row.status !== 'Pending') return res.status(400).json({ message: 'Can only delete pending leaves' });
+    
+    // Get today's date at midnight
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Parse leave dates
+    const fromDate = new Date(row.from_date + 'T00:00:00');
+    const toDate = new Date(row.to_date + 'T00:00:00');
+    
+    // Check if entire leave is in the future
+    if (fromDate >= today) {
+      // All dates are future - delete entire leave
+      await row.destroy();
+      return res.json({ message: 'Leave cancelled completely', type: 'full' });
+    }
+    
+    // Check if entire leave is in the past
+    if (toDate < today) {
+      return res.status(400).json({ message: 'Cannot cancel leaves that have already been consumed' });
+    }
+    
+    // Partial cancellation - some dates are past, some are future
+    // Calculate the last past date (yesterday)
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Calculate how many days to keep (past dates only)
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    const daysToKeep = Math.round((yesterday - fromDate) / MS_PER_DAY) + 1;
+    
+    // Calculate new credited days (for full day leaves only, as half-day cannot span multiple days)
+    const newCreditedDays = daysToKeep;
+    
+    // Update the leave to end at yesterday
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    await row.update({
+      to_date: yesterdayStr,
+      credited_days: newCreditedDays
+    });
+    
+    // Calculate cancelled days
+    const cancelledDays = parseFloat(row.credited_days) - newCreditedDays;
+    
+    res.json({ 
+      message: `Leave partially cancelled. ${cancelledDays} day(s) cancelled, ${newCreditedDays} day(s) retained.`,
+      type: 'partial',
+      cancelledDays,
+      retainedDays: newCreditedDays
+    });
+  } catch (error) {
+    console.error('Error removing leave:', error);
+    res.status(500).json({ message: 'Error cancelling leave', error: error.message });
+  }
 };
 
 exports.getLeaveBalance = async (req, res) => {
