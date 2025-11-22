@@ -619,15 +619,15 @@ export default function StaffPage() {
                         <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
                         <input type="email" value={form.email} onChange={e=>setForm({ ...form, email: e.target.value })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter Email Address" required />
                       </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-gray-100">
-                      <h4 className="mb-3 text-sm font-semibold text-gray-800">Staff Details</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
+                       <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Employee ID</label>
                           <input required value={form.staff.emp_id} onChange={e=>setForm({ ...form, staff: { ...form.staff, emp_id: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="EMP001" maxLength="20" />
                         </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                       
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">Date of Birth</label>
                           <input type="date" value={form.staff.date_of_birth} onChange={e=>setForm({ ...form, staff: { ...form.staff, date_of_birth: e.target.value } })} className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
@@ -789,11 +789,10 @@ export default function StaffPage() {
                               </div>
                             )}
                           </div>
-                          <p className="mt-1 text-xs text-gray-500">Upload staff photo (Max 5MB, formats: JPG, PNG, GIF, WebP)</p>
+                          <p className="mt-1 text-xs text-gray-500">Upload staff photo (Max 5MB, formats: JPG, PNG,)</p>
                         </div>
                       </div>
                     </div>
-
                     <div className="pt-2 border-t border-gray-100">
                       <h4 className="mb-3 text-sm font-semibold text-gray-800">Emergency Contact</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
