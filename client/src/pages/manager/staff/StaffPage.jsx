@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../../../lib/api'
 import { getDepartments } from '../../../api/departmentApi'
 import { getDesignations } from '../../../api/designationApi'
 
 export default function StaffPage() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
   const [departments, setDepartments] = useState([])
@@ -50,22 +52,18 @@ export default function StaffPage() {
       const matchesSearch = (r.fullName || [r.staff?.first_name, r.staff?.middle_name, r.staff?.last_name].filter(Boolean).join(' '))?.toLowerCase().includes(q) ||
         r.email?.toLowerCase().includes(q) ||
         r.role?.toLowerCase().includes(q) ||
-        r.staff?.department?.toLowerCase().includes(q) ||
-        r.staff?.designation?.toLowerCase().includes(q) ||
+        r.staff?.Departments?.[0]?.dept_name?.toLowerCase().includes(q) ||
+        r.staff?.Designations?.[0]?.name?.toLowerCase().includes(q) ||
+        r.staff?.Associations?.[0]?.asso_name?.toLowerCase().includes(q) ||
         r.staff?.emp_id?.toLowerCase().includes(q) ||
         r.staff?.religion?.toLowerCase().includes(q)
       
       // Role filter
       const matchesRole = !filterRole || r.role === filterRole
       
-      // Department filter - handle new many-to-many relationship
+      // Department filter - handle many-to-many relationship
       const matchesDept = !filterDept || 
-        String(r.staff?.Departments?.[0]?.id) === filterDept ||
-        String(r.staff?.Department?.id) === filterDept ||
-        String(r.staff?.department_id) === filterDept ||
-        r.staff?.Departments?.[0]?.dept_name === filterDept ||
-        r.staff?.Department?.dept_name === filterDept ||
-        r.staff?.department === filterDept
+        String(r.staff?.Departments?.[0]?.id) === filterDept
       
       return matchesSearch && matchesRole && matchesDept
     })
@@ -158,12 +156,14 @@ export default function StaffPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Role</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Department</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Designation</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Association</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Religion</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="8" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
+                  <tr><td colSpan="10" className="px-6 py-12 text-center text-gray-500">No staff found</td></tr>
                 ) : (
                   paginated.map((u, idx) => (
                     <tr key={u.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}>
@@ -176,9 +176,22 @@ export default function StaffPage() {
                           {u.role}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.department || u.staff?.Department?.dept_name || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.designation || u.staff?.Designation?.designation_name || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Departments?.[0]?.dept_name || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Designations?.[0]?.name || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.Associations?.[0]?.asso_name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.staff?.religion || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <button
+                          onClick={() => navigate(`/manager/staff/view/${u.id}`)}
+                          className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors"
+                          title="View Staff Details"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}

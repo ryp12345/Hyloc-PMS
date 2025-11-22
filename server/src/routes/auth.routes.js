@@ -12,7 +12,8 @@ router.post('/register', [
 
 router.post('/login', [
   body('email').isEmail(),
-  body('password').notEmpty()
+  body('password').notEmpty(),
+  body('selectedRole').optional().isString()
 ], ctrl.login);
 
 router.post('/refresh', [ body('refreshToken').notEmpty() ], ctrl.refresh);
@@ -22,5 +23,8 @@ router.post('/change-password', authenticate, [
   body('currentPassword').notEmpty(),
   body('newPassword').isLength({ min: 6 })
 ], ctrl.changePassword);
+router.post('/switch-role', authenticate, [
+  body('roleId').isInt()
+], ctrl.switchRole);
 
 module.exports = router;

@@ -7,8 +7,8 @@ export default function StaffViewPage() {
   const navigate = useNavigate()
   const [staff, setStaff] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('basic')
-  const [editModal, setEditModal] = useState({ isOpen: false, type: null, data: null })
   
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
   const getImageUrl = (imagePath) => {
@@ -27,43 +27,22 @@ export default function StaffViewPage() {
 
   useEffect(() => {
     loadStaff()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const loadStaff = async () => {
     try {
       setLoading(true)
+      setError(null)
       const res = await api.get(`/users/${id}`)
+      console.log('Staff data loaded:', res.data)
       setStaff(res.data)
     } catch (e) {
       console.error('Failed to load staff:', e)
+      console.error('Error details:', e.response?.data || e.message)
+      setError(e.response?.data?.message || e.message || 'Failed to load staff data')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const openEditModal = (type, data) => {
-    setEditModal({ isOpen: true, type, data })
-  }
-
-  const closeEditModal = () => {
-    setEditModal({ isOpen: false, type: null, data: null })
-  }
-
-  const handleSave = async (updatedData) => {
-    try {
-      // Handle saving based on type
-      if (editModal.type === 'department') {
-        await api.put(`/users/${id}/department/${editModal.data.id}`, updatedData)
-      } else if (editModal.type === 'designation') {
-        await api.put(`/users/${id}/designation/${editModal.data.id}`, updatedData)
-      } else if (editModal.type === 'association') {
-        await api.put(`/users/${id}/association/${editModal.data.id}`, updatedData)
-      }
-      await loadStaff()
-      closeEditModal()
-    } catch (e) {
-      console.error('Failed to save:', e)
-      alert('Failed to save changes')
     }
   }
 
@@ -84,9 +63,13 @@ export default function StaffViewPage() {
       <div className="min-h-screen px-4 py-12 bg-gradient-to-br from-gray-50 to-gray-100 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
-            <p className="text-gray-500">Staff member not found</p>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-gray-500 mb-2">Staff member not found</p>
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
             <button
-              onClick={() => navigate('/staff')}
+              onClick={() => navigate('/manager/staff')}
               className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
               Back to Staff List
@@ -103,7 +86,7 @@ export default function StaffViewPage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
-            onClick={() => navigate('/staff')}
+            onClick={() => navigate('/manager/staff')}
             className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -329,7 +312,6 @@ export default function StaffViewPage() {
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Department Name</th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date</th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
@@ -339,17 +321,6 @@ export default function StaffViewPage() {
                             <td className="px-4 py-3 text-sm font-medium text-gray-900">{dept.dept_name || '-'}</td>
                             <td className="px-4 py-3 text-sm text-gray-700">{formatDate(dept.DepartmentStaff?.start_date)}</td>
                             <td className="px-4 py-3 text-sm text-gray-700">{formatDate(dept.DepartmentStaff?.end_date)}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <button
-                                onClick={() => openEditModal('department', dept)}
-                                className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors"
-                                title="Edit Department"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -386,7 +357,6 @@ export default function StaffViewPage() {
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Designation Name</th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date</th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
@@ -396,17 +366,6 @@ export default function StaffViewPage() {
                             <td className="px-4 py-3 text-sm font-medium text-gray-900">{desig.name || '-'}</td>
                             <td className="px-4 py-3 text-sm text-gray-700">{formatDate(desig.DesignationStaff?.start_date)}</td>
                             <td className="px-4 py-3 text-sm text-gray-700">{formatDate(desig.DesignationStaff?.end_date)}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <button
-                                onClick={() => openEditModal('designation', desig)}
-                                className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors"
-                                title="Edit Designation"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -443,7 +402,6 @@ export default function StaffViewPage() {
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Association Name</th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date</th>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</th>
-                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
@@ -453,17 +411,6 @@ export default function StaffViewPage() {
                             <td className="px-4 py-3 text-sm font-medium text-gray-900">{asso.asso_name || '-'}</td>
                             <td className="px-4 py-3 text-sm text-gray-700">{formatDate(asso.AssociationStaff?.start_date)}</td>
                             <td className="px-4 py-3 text-sm text-gray-700">{formatDate(asso.AssociationStaff?.end_date)}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <button
-                                onClick={() => openEditModal('association', asso)}
-                                className="text-indigo-600 hover:text-indigo-900 font-medium transition-colors"
-                                title="Edit Association"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -482,203 +429,7 @@ export default function StaffViewPage() {
           )}
           </div>
         </div>
-
-        {/* Edit Modal */}
-        {editModal.isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Edit {editModal.type?.charAt(0).toUpperCase() + editModal.type?.slice(1)}
-                </h3>
-                <button
-                  onClick={closeEditModal}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="p-6">
-                <EditModalContent 
-                  type={editModal.type}
-                  data={editModal.data}
-                  onSave={handleSave}
-                  onCancel={closeEditModal}
-                />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
-  )
-}
-
-// Edit Modal Content Component
-function EditModalContent({ type, data, onSave, onCancel }) {
-  const [formData, setFormData] = useState({})
-  const [options, setOptions] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadOptions()
-    if (type === 'department') {
-      setFormData({
-        department_id: data?.id || '',
-        dept_name: data?.dept_name || '',
-        start_date: data?.DepartmentStaff?.start_date?.split('T')[0] || '',
-        end_date: data?.DepartmentStaff?.end_date?.split('T')[0] || ''
-      })
-    } else if (type === 'designation') {
-      setFormData({
-        designation_id: data?.id || '',
-        name: data?.name || '',
-        start_date: data?.DesignationStaff?.start_date?.split('T')[0] || '',
-        end_date: data?.DesignationStaff?.end_date?.split('T')[0] || ''
-      })
-    } else if (type === 'association') {
-      setFormData({
-        association_id: data?.id || '',
-        asso_name: data?.asso_name || '',
-        start_date: data?.AssociationStaff?.start_date?.split('T')[0] || '',
-        end_date: data?.AssociationStaff?.end_date?.split('T')[0] || ''
-      })
-    }
-  }, [type, data])
-
-  const loadOptions = async () => {
-    try {
-      setLoading(true)
-      let res
-      if (type === 'department') {
-        res = await api.get('/departments')
-      } else if (type === 'designation') {
-        res = await api.get('/designations')
-      } else if (type === 'association') {
-        res = await api.get('/associations')
-      }
-      setOptions(res?.data || [])
-    } catch (e) {
-      console.error('Failed to load options:', e)
-      setOptions([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => {
-      const updated = { ...prev, [name]: value }
-      
-      // Update the display name when dropdown changes
-      if (name === 'department_id') {
-        const selected = options.find(opt => opt.id === parseInt(value))
-        updated.dept_name = selected?.dept_name || ''
-      } else if (name === 'designation_id') {
-        const selected = options.find(opt => opt.id === parseInt(value))
-        updated.name = selected?.name || ''
-      } else if (name === 'association_id') {
-        const selected = options.find(opt => opt.id === parseInt(value))
-        updated.asso_name = selected?.asso_name || ''
-      }
-      
-      return updated
-    })
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    onSave(formData)
-  }
-
-  const getLabel = () => {
-    if (type === 'department') return 'Department Name'
-    if (type === 'designation') return 'Designation Name'
-    if (type === 'association') return 'Association Name'
-    return 'Name'
-  }
-
-  const getFieldName = () => {
-    if (type === 'department') return 'dept_name'
-    if (type === 'designation') return 'name'
-    if (type === 'association') return 'asso_name'
-    return 'name'
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {getLabel()}
-        </label>
-        {loading ? (
-          <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-            <span className="text-gray-500">Loading options...</span>
-          </div>
-        ) : (
-          <select
-            name={type === 'department' ? 'department_id' : type === 'designation' ? 'designation_id' : 'association_id'}
-            value={formData[type === 'department' ? 'department_id' : type === 'designation' ? 'designation_id' : 'association_id'] || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            <option value="">Select {type}</option>
-            {options.map((option) => (
-              <option key={option.id} value={option.id}>
-                {type === 'department' ? option.dept_name : type === 'designation' ? option.name : option.asso_name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Start Date
-          </label>
-          <input
-            type="date"
-            name="start_date"
-            value={formData.start_date || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            End Date
-          </label>
-          <input
-            type="date"
-            name="end_date"
-            value={formData.end_date || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-3 justify-end pt-4 border-t">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Update
-        </button>
-      </div>
-    </form>
   )
 }

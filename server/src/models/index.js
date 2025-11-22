@@ -4,6 +4,7 @@ const { sequelize } = require('../setup/db');
 // Models
 const Role = require('./role.model')(sequelize, DataTypes);
 const User = require('./user.model')(sequelize, DataTypes);
+const UserRole = require('./user_role.model')(sequelize, DataTypes);
 const Staff = require('./staff.model')(sequelize, DataTypes);
 const KMI = require('./kmi.model')(sequelize, DataTypes);
 const KPI = require('./kpi.model')(sequelize, DataTypes);
@@ -25,8 +26,13 @@ const AssociationStaff = require('./association_staff.model')(sequelize, DataTyp
 
 // Associations per spec
 // Use snake_case FKs to match DB columns
-Role.hasMany(User, { foreignKey: 'role_id' });
-User.belongsTo(Role, { foreignKey: 'role_id' });
+// User <-> Role via user_roles (remove one-to-one from users.role_id)
+User.belongsToMany(Role, { through: UserRole, foreignKey: 'user_id', otherKey: 'role_id' });
+Role.belongsToMany(User, { through: UserRole, foreignKey: 'role_id', otherKey: 'user_id' });
+UserRole.belongsTo(User, { foreignKey: 'user_id' });
+UserRole.belongsTo(Role, { foreignKey: 'role_id' });
+User.hasMany(UserRole, { foreignKey: 'user_id' });
+Role.hasMany(UserRole, { foreignKey: 'role_id' });
 
 User.hasOne(Staff, { foreignKey: 'user_id', onDelete: 'CASCADE', hooks: true });
 Staff.belongsTo(User, { foreignKey: 'user_id' });
@@ -120,6 +126,7 @@ module.exports = {
   sequelize,
   Role,
   User,
+  UserRole,
   Staff,
   KMI,
   KPI,

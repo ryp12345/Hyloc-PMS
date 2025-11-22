@@ -3,8 +3,13 @@ import { createApiInstance } from './axiosConfig'
 const authApi = createApiInstance()
 
 export const authService = {
-  login: (email, password) => 
-    authApi.post('/auth/login', { email, password }),
+  login: (email, password, selectedRole) => {
+    const payload = { email, password }
+    if (selectedRole) {
+      payload.selectedRole = selectedRole
+    }
+    return authApi.post('/auth/login', payload)
+  },
   
   logout: () => 
     authApi.post('/auth/logout'),
@@ -17,4 +22,7 @@ export const authService = {
   
   changePassword: (currentPassword, newPassword) => 
     authApi.post('/auth/change-password', { currentPassword, newPassword }),
+  
+  switchRole: (roleId) =>
+    authApi.post('/auth/switch-role', { roleId }),
 }

@@ -92,10 +92,9 @@ exports.pendingLeaves = async (req, res) => {
     console.log('Current User ID:', currentUserId);
     console.log('Current User Role (from token):', req.user.role);
     
-    // Get current user with role_id and department
+    // Get current user with department (role comes from token now)
     const currentUserFull = await User.findByPk(currentUserId, {
       include: [
-        { model: Role, attributes: ['id', 'name'] },
         {
           model: Staff,
           include: [{
@@ -112,11 +111,10 @@ exports.pendingLeaves = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    const currentUserRoleId = currentUserFull.Role?.id;
+    const currentUserRoleName = req.user.role;
     const currentUserDeptId = currentUserFull?.Staff?.Departments?.[0]?.id;
     
-    console.log('Current User Role ID:', currentUserRoleId);
-    console.log('Current User Role Name:', currentUserFull.Role?.name);
+    console.log('Current User Role Name:', currentUserRoleName);
     console.log('Current User Department ID:', currentUserDeptId);
     console.log('Current User Staff:', currentUserFull?.Staff ? 'EXISTS' : 'NULL');
     
@@ -128,17 +126,20 @@ exports.pendingLeaves = async (req, res) => {
       include: [
         { 
           model: User,
-          attributes: ['id', 'email', 'role_id'],
-          include: [{
-            model: Staff,
-            attributes: ['emp_id', 'phone_no', 'first_name', 'middle_name', 'last_name'],
-            include: [{
-              model: Department,
-              as: 'Departments',
-              attributes: ['id', 'dept_name'],
-              through: { attributes: [] }
-            }]
-          }]
+          attributes: ['id', 'email'],
+          include: [
+            {
+              model: Staff,
+              attributes: ['emp_id', 'phone_no', 'first_name', 'middle_name', 'last_name'],
+              include: [{
+                model: Department,
+                as: 'Departments',
+                attributes: ['id', 'dept_name'],
+                through: { attributes: [] }
+              }]
+            },
+            { model: Role, through: { attributes: ['status'] } }
+          ]
         }
       ],
       order: [['created_at', 'DESC']] 
@@ -155,36 +156,37 @@ exports.pendingLeaves = async (req, res) => {
       const applicantName = applicant?.Staff ? 
         [applicant.Staff.first_name, applicant.Staff.middle_name, applicant.Staff.last_name]
           .filter(Boolean).join(' ') : 'Unknown';
+      const applicantRoleName = (applicant.Roles || []).find(r => r.UserRole?.status === 'Active')?.name || null;
       
       console.log(`\nLeave ID ${leave.id}:`);
       console.log('  Applicant:', applicantName);
-      console.log('  Applicant Role ID:', applicant?.role_id);
+      console.log('  Applicant Role:', applicantRoleName);
       console.log('  Applicant Dept ID:', applicantDeptId);
       console.log('  Credited Days:', leave.credited_days, 'Type:', typeof leave.credited_days);
       
       // Determine if current user should approve this leave
       let shouldApprove = false;
       
-      if (currentUserRoleId === 1) { // Management (role_id 1)
+      if (currentUserRoleName === 'Management') {
         // Management approves ONLY: Employee >2 days, Manager leaves, HR leaves
         // Management should NOT see Employee <=2 days (those go to Manager)
-        if (applicant.role_id === 3 && parseFloat(leave.credited_days) > 2) {
+        if (applicantRoleName === 'Employee' && parseFloat(leave.credited_days) > 2) {
           shouldApprove = true;
           console.log('  MATCH: Management approving Employee >2 days');
-        } else if (applicant.role_id === 2 || applicant.role_id === 4) {
+        } else if (applicantRoleName === 'Manager' || applicantRoleName === 'HR') {
           shouldApprove = true;
           console.log('  MATCH: Management approving Manager/HR leave');
-        } else if (applicant.role_id === 3 && parseFloat(leave.credited_days) <= 2) {
+        } else if (applicantRoleName === 'Employee' && parseFloat(leave.credited_days) <= 2) {
           console.log('  SKIP: Employee <=2 days should go to Manager, not Management');
         }
-      } else if (currentUserRoleId === 2) { // Manager (role_id 2)
+      } else if (currentUserRoleName === 'Manager') {
         // Manager approves: Employee <=2 days from same department
         console.log('  Checking Manager approval conditions:');
-        console.log('    Is Employee (role 3)?', applicant.role_id === 3);
+        console.log('    Is Employee?', applicantRoleName === 'Employee');
         console.log('    Days <= 2?', parseFloat(leave.credited_days) <= 2);
         console.log('    Same dept?', applicantDeptId === currentUserDeptId);
         
-        if (applicant.role_id === 3 && 
+        if (applicantRoleName === 'Employee' && 
             parseFloat(leave.credited_days) <= 2 && 
             applicantDeptId && 
             currentUserDeptId &&
@@ -228,21 +230,7 @@ exports.allLeaves = async (req, res) => {
 
 exports.approve = async (req, res) => {
   try {
-    const row = await Leave.findByPk(req.params.id, {
-      include: [{
-        model: User,
-        as: 'User',
-        attributes: ['role_id'],
-        include: [{
-          model: Staff,
-          include: [{
-            model: Department,
-            as: 'Departments',
-            through: { attributes: [] }
-          }]
-        }]
-      }]
-    });
+    const row = await Leave.findByPk(req.params.id);
     
     if (!row) return res.status(404).json({ message: 'Not found' });
     
@@ -263,21 +251,7 @@ exports.approve = async (req, res) => {
 
 exports.reject = async (req, res) => {
   try {
-    const row = await Leave.findByPk(req.params.id, {
-      include: [{
-        model: User,
-        as: 'User',
-        attributes: ['role_id'],
-        include: [{
-          model: Staff,
-          include: [{
-            model: Department,
-            as: 'Departments',
-            through: { attributes: [] }
-          }]
-        }]
-      }]
-    });
+    const row = await Leave.findByPk(req.params.id);
     
     if (!row) return res.status(404).json({ message: 'Not found' });
     
